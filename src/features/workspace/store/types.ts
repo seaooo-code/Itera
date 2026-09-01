@@ -53,6 +53,7 @@ export interface SyncState {
 export interface WorkspaceState {
   project: ProjectState | null;
   tree: FileTreeNode[];
+  ignoredPatterns: string[];
   expandedDirs: Record<string, boolean>;
   tabs: TabState[];
   activePath: string | null;

@@ -72,6 +72,49 @@ function normalizedPath(path: string) {
   return path.replace(/\\/g, "/").replace(/\/$/, "");
 }
 
+export function parseGitignorePatterns(content: string) {
+  const patterns: string[] = [];
+  const seen = new Set<string>();
+
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("!")) continue;
+
+    const pattern =
+      trimmed.startsWith("\\#") || trimmed.startsWith("\\!") ? trimmed.slice(1) : trimmed;
+    if (!seen.has(pattern)) {
+      seen.add(pattern);
+      patterns.push(pattern);
+    }
+  }
+
+  return patterns;
+}
+
+async function readRootGitignorePatterns(rootPath: string) {
+  const gitignorePath = await join(rootPath, ".gitignore");
+
+  try {
+    if (!(await exists(gitignorePath))) return [];
+
+    const content = decodeUtf8(await readFile(gitignorePath));
+    if (content === null) {
+      console.warn("[Itera] 无法按 UTF-8 读取 .gitignore，已跳过忽略规则展示", {
+        path: gitignorePath,
+      });
+      return [];
+    }
+
+    return parseGitignorePatterns(content);
+  } catch (error) {
+    console.warn("[Itera] 读取 .gitignore 失败，已跳过忽略规则展示", {
+      path: gitignorePath,
+      error,
+    });
+    return [];
+  }
+}
+
 export function relativePath(rootPath: string, filePath: string) {
   const root = normalizedPath(rootPath);
   const file = normalizedPath(filePath);
@@ -100,7 +143,12 @@ async function readDirectoryTree(path: string): Promise<FileTreeNode[]> {
   }
 
   const sortedEntries = entries
-    .filter((entry) => !entry.isSymlink && !IGNORED_DIRECTORIES.has(entry.name))
+    .filter(
+      (entry) =>
+        !entry.isSymlink &&
+        (entry.isDirectory || entry.isFile) &&
+        !IGNORED_DIRECTORIES.has(entry.name),
+    )
     .sort((left, right) => {
       if (left.isDirectory !== right.isDirectory) {
         return left.isDirectory ? -1 : 1;
@@ -148,10 +196,17 @@ async function readDirectoryTree(path: string): Promise<FileTreeNode[]> {
 export async function readProjectTree(rootPath: string) {
   assertTauriRuntime("本地文件能力需要在 Tauri 桌面环境中使用。");
 
+  const [name, children, ignoredPatterns] = await Promise.all([
+    basename(rootPath),
+    readDirectoryTree(rootPath),
+    readRootGitignorePatterns(rootPath),
+  ]);
+
   return {
-    name: await basename(rootPath),
+    name,
     path: rootPath,
-    children: await readDirectoryTree(rootPath),
+    children,
+    ignoredPatterns,
   };
 }
 

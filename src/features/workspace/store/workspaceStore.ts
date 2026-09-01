@@ -95,6 +95,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     (set, get) => ({
       project: null,
       tree: [],
+      ignoredPatterns: [],
       expandedDirs: {},
       tabs: [],
       activePath: null,
@@ -146,6 +147,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               syncedAt: Date.now(),
             },
             tree: project.children,
+            ignoredPatterns: project.ignoredPatterns,
             tabs,
             activePath: tabs.some((tab) => tab.path === get().activePath)
               ? get().activePath
@@ -175,6 +177,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         set({
           project: null,
           tree: [],
+          ignoredPatterns: [],
           tabs: [],
           activePath: null,
           syncState: { status: "idle", error: null },
@@ -224,6 +227,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
           set({
             tree: nextProject.children,
+            ignoredPatterns: nextProject.ignoredPatterns,
             tabs: nextTabs,
             project: { ...project, syncedAt: Date.now() },
             syncState: { status: "synced", error: null },
@@ -261,9 +265,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             activePath: path,
           }));
         } catch (error) {
-          const message = formatFileError(error, "读取文件失败");
           console.error("[Itera] 读取文件失败", { path, error });
-          set({ syncState: { status: "failed", error: message } });
           throw error;
         }
       },
@@ -411,7 +413,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         if (lastPath && lastAvailable) {
           await get().openProject(lastPath, true);
         } else {
-          set({ project: null, tree: [], tabs: [], activePath: null });
+          set({ project: null, tree: [], ignoredPatterns: [], tabs: [], activePath: null });
         }
       },
     }),

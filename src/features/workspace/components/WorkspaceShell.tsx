@@ -14,6 +14,7 @@ import { WorkspaceSidebar } from "./WorkspaceSidebar";
 export function WorkspaceShell() {
   const project = useWorkspaceStore((state) => state.project);
   const tree = useWorkspaceStore((state) => state.tree);
+  const ignoredPatterns = useWorkspaceStore((state) => state.ignoredPatterns);
   const expandedDirs = useWorkspaceStore((state) => state.expandedDirs);
   const tabs = useWorkspaceStore((state) => state.tabs);
   const activePath = useWorkspaceStore((state) => state.activePath);
@@ -323,6 +324,7 @@ export function WorkspaceShell() {
             {sidebarVisible ? (
               <WorkspaceSidebar
                 tree={tree}
+                ignoredPatterns={ignoredPatterns}
                 expandedDirs={expandedDirs}
                 activePath={activePath}
                 sidebarWidth={sidebarWidth}

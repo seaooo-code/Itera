@@ -6,6 +6,7 @@ import { FileTree } from "./FileTree";
 
 interface WorkspaceSidebarProps {
   tree: FileTreeNode[];
+  ignoredPatterns: string[];
   expandedDirs: Record<string, boolean>;
   activePath: string | null;
   sidebarWidth: number;
@@ -20,6 +21,7 @@ interface WorkspaceSidebarProps {
 
 export function WorkspaceSidebar({
   tree,
+  ignoredPatterns,
   expandedDirs,
   activePath,
   sidebarWidth,
@@ -66,11 +68,15 @@ export function WorkspaceSidebar({
           onOpenFile={onOpenFile}
           onToggleDirectory={onToggleDirectory}
         />
-        <p className="m-0 shrink-0 px-3 pb-2.5 pt-1 font-mono text-[11px] text-[#6c737c]">
-          已忽略 <b className="font-medium text-[#29303a]">.git</b> ·{" "}
-          <b className="font-medium text-[#29303a]">node_modules</b> ·{" "}
-          <b className="font-medium text-[#29303a]">dist</b>
-        </p>
+        {ignoredPatterns.length > 0 ? (
+          <p
+            className="m-0 shrink-0 cursor-default overflow-hidden text-ellipsis whitespace-nowrap px-3 pb-2.5 pt-[9px] font-mono text-[11px] text-[#6c737c]"
+            title={`已忽略 ${ignoredPatterns.join(" · ")} 等 ${ignoredPatterns.length} 项`}
+          >
+            已忽略隐藏与依赖目录{" "}
+            <b className="font-semibold text-[#6c737c]">· {ignoredPatterns.length} 项</b>
+          </p>
+        ) : null}
       </aside>
       <hr
         className="group relative m-0 w-2 shrink-0 cursor-col-resize border-0 after:absolute after:inset-y-3 after:left-1/2 after:w-0.5 after:-translate-x-1/2 after:rounded-full after:bg-transparent group-hover:after:bg-[#b8dfc1]"
