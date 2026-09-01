@@ -1,0 +1,33 @@
+:root {
+  --itera-color-ink: #29303a;
+  --itera-color-muted: #6c737c;
+  --itera-color-subtle: #7c848d;
+  --itera-color-faint: #8b9299;
+  --itera-color-surface: #ffffff;
+  --itera-color-canvas: #f5f7f7;
+  --itera-color-hover: #edf0f2;
+  --itera-color-border: #dfe4e6;
+  --itera-color-border-soft: #e1e5e7;
+  --itera-color-primary: #3c8f55;
+  --itera-color-primary-dark: #337c49;
+  --itera-color-primary-border: #347d4a;
+  --itera-color-primary-soft: #eff9f1;
+  --itera-color-primary-muted: #b8dfc1;
+  --itera-color-warning: #805a16;
+  --itera-color-warning-soft: #fff8e8;
+  --itera-color-warning-border: #e6c98f;
+  --itera-color-danger: #8d3e34;
+  --itera-color-danger-soft: #fff6f4;
+  --itera-color-danger-border: #e4b9b1;
+  --itera-font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+  --itera-font-mono:
+    "JetBrains Mono Variable", "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --itera-font-size-root: 13px;
+  --itera-titlebar-height: 46px;
+  --itera-statusbar-height: 28px;
+  --itera-sidebar-min-width: 196px;
+  --itera-sidebar-default-width: 264px;
+  --itera-sidebar-max-width: 460px;
+  --itera-editor-font-size: 13.5px;
+  --itera-editor-line-height: 22px;
+}

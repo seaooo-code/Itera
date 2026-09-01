@@ -1,0 +1,66 @@
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+@import "./tokens.css";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--itera-font-sans);
+  --font-mono: var(--itera-font-mono);
+}
+
+@layer base {
+  :root {
+    color: var(--itera-color-ink);
+    background: var(--itera-color-canvas);
+    font-family: var(--itera-font-sans);
+    font-size: var(--itera-font-size-root);
+    line-height: 1.5;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    min-width: 320px;
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+  }
+
+  body {
+    overflow: auto;
+  }
+
+  #root {
+    min-height: 100%;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  ::selection {
+    background: #dff3e4;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

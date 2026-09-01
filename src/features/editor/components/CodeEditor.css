@@ -1,0 +1,23 @@
+.code-editor {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.code-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.code-editor .cm-editor {
+  height: 100%;
+}
+
+.code-editor .cm-scroller {
+  overscroll-behavior: contain;
+}
+
+.code-editor .cm-tooltip,
+.code-editor .cm-panels {
+  display: none;
+}
