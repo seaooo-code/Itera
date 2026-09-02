@@ -49,7 +49,7 @@
   }
 
   ::selection {
-    background: #dff3e4;
+    background: var(--itera-color-selection);
   }
 }
 

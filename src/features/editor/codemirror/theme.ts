@@ -31,7 +31,7 @@ export const editorLayoutTheme = EditorView.theme({
   ".cm-gutters": {
     paddingTop: "0",
     backgroundColor: "var(--itera-color-surface)",
-    color: "#7f8790",
+    color: "var(--itera-color-line-number)",
     border: "0",
     fontSize: "11.5px",
     lineHeight: "var(--itera-editor-line-height)",
@@ -50,39 +50,52 @@ export const editorLayoutTheme = EditorView.theme({
     textAlign: "right",
   },
   ".cm-activeLine": {
-    backgroundColor: "#f3fbf5",
+    backgroundColor: "var(--itera-color-current-line)",
   },
   ".cm-activeLineGutter": {
-    backgroundColor: "#f3fbf5",
-    color: "#29303a",
-    boxShadow: "inset 2px 0 0 #83c88f",
+    backgroundColor: "var(--itera-color-current-line)",
+    color: "var(--itera-color-ink)",
+    boxShadow: "inset 2px 0 0 var(--itera-color-primary-border)",
   },
   ".cm-selectionBackground, ::selection": {
-    backgroundColor: "#dff3e4 !important",
+    backgroundColor: "var(--itera-color-selection) !important",
   },
   ".cm-searchMatch": {
-    backgroundColor: "#fae4ad",
-    outline: "1px solid #d4a749",
+    backgroundColor: "var(--itera-color-warning-find)",
+    outline: "1px solid var(--itera-color-warning-border)",
   },
   ".cm-searchMatch.cm-searchMatch-selected": {
-    backgroundColor: "#f1c66b",
+    backgroundColor: "var(--itera-color-warning-find-current)",
   },
 });
 
 export const syntaxTheme = syntaxHighlighting(
   HighlightStyle.define([
-    { tag: tags.keyword, color: "#7441a8" },
-    { tag: [tags.typeName, tags.className], color: "#3e617d" },
-    { tag: [tags.string, tags.special(tags.string)], color: "#996126" },
-    { tag: tags.number, color: "#9d4f38" },
-    { tag: tags.comment, color: "#6c737c", fontStyle: "italic" },
+    { tag: tags.keyword, color: "var(--itera-color-syntax-keyword)" },
+    {
+      tag: [tags.typeName, tags.className],
+      color: "var(--itera-color-syntax-type)",
+    },
+    {
+      tag: [tags.string, tags.special(tags.string)],
+      color: "var(--itera-color-syntax-string)",
+    },
+    { tag: tags.number, color: "var(--itera-color-syntax-number)" },
+    {
+      tag: tags.comment,
+      color: "var(--itera-color-syntax-comment)",
+      fontStyle: "italic",
+    },
     {
       tag: [tags.function(tags.variableName), tags.labelName],
-      color: "#4e569c",
+      color: "var(--itera-color-syntax-function)",
     },
-    { tag: [tags.variableName, tags.propertyName], color: "#3f4855" },
-    { tag: tags.tagName, color: "#95436e" },
-    { tag: tags.operator, color: "#58626c" },
-    { tag: tags.punctuation, color: "#58626c" },
+    {
+      tag: [tags.variableName, tags.propertyName],
+      color: "var(--itera-color-syntax-property)",
+    },
+    { tag: tags.tagName, color: "var(--itera-color-syntax-tag)" },
+    { tag: tags.operator, color: "var(--itera-color-syntax-punctuation)" },
+    { tag: tags.punctuation, color: "var(--itera-color-syntax-punctuation)" },
   ]),
 );

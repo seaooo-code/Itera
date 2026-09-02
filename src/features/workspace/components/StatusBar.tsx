@@ -20,7 +20,7 @@ export function StatusBar({
 }: StatusBarProps) {
   return (
     <footer
-      className="flex min-w-0 items-center gap-3 px-3 font-mono text-[11px] text-[#6c737c]"
+      className="flex min-w-0 items-center gap-3 px-3 font-mono text-[11px] text-[var(--itera-color-muted)]"
       role="status"
       aria-live="polite"
     >
@@ -31,7 +31,7 @@ export function StatusBar({
       </span>
       <span className="shrink-0">
         <span
-          className={`inline-flex h-[19px] items-center gap-1.5 rounded-full border px-2 text-[10.5px] ${activeTab?.dirty ? "border-[#e6c98f] bg-[#fff8e8] text-[#805a16]" : syncState.status === "failed" ? "border-[#e4b9b1] bg-[#fff6f4] text-[#8d3e34]" : "border-[#b8dfc1] bg-[#eff9f1] text-[#347d4a]"}`}
+          className={`inline-flex h-[19px] items-center gap-1.5 rounded-full border px-2 text-[10.5px] ${activeTab?.dirty ? "border-[var(--itera-color-warning-border)] bg-[var(--itera-color-warning-soft)] text-[var(--itera-color-warning)]" : syncState.status === "failed" ? "border-[var(--itera-color-danger-border)] bg-[var(--itera-color-danger-soft)] text-[var(--itera-color-danger)]" : "border-[var(--itera-color-primary-border)] bg-[var(--itera-color-primary-soft)] text-[var(--itera-color-primary-ink)]"}`}
         >
           <i className="h-[5px] w-[5px] rounded-full bg-current" />
           {activeTab?.dirty
@@ -50,7 +50,7 @@ export function StatusBar({
       <span className="shrink-0">{activeTab ? getLanguageLabel(activeTab.language) : "—"}</span>
       <button
         type="button"
-        className="h-6 shrink-0 rounded-[5px] border border-transparent bg-transparent px-2 font-mono text-[11px] text-[#6c737c] outline-none hover:border-[#dfe4e6] hover:bg-[#f0f2f3] hover:text-[#29303a] focus-visible:ring-2 focus-visible:ring-[#3c8f55] disabled:cursor-not-allowed disabled:opacity-45"
+        className="h-6 shrink-0 rounded-[5px] border border-transparent bg-transparent px-2 font-mono text-[11px] text-[var(--itera-color-muted)] outline-none hover:border-[var(--itera-color-border)] hover:bg-[var(--itera-color-hover)] hover:text-[var(--itera-color-ink)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed disabled:opacity-45"
         onClick={onOpenFind}
         disabled={!activeTab}
       >

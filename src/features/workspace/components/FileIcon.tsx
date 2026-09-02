@@ -41,21 +41,30 @@ interface FileIconDefinition {
 }
 
 const FILE_ICON_DEFINITIONS: Record<FileIconKind, FileIconDefinition> = {
-  typescript: { component: FileTsIcon, tone: "text-[#3e617d]" },
-  javascript: { component: FileJsIcon, tone: "text-[#96721a]" },
-  jsx: { component: FileJsxIcon, tone: "text-[#3e617d]" },
-  tsx: { component: FileTsxIcon, tone: "text-[#3e617d]" },
-  css: { component: FileCssIcon, tone: "text-[#267a7c]" },
-  html: { component: FileHtmlIcon, tone: "text-[#a34d3d]" },
-  markdown: { component: FileMdIcon, tone: "text-[#7441a8]" },
-  config: { component: FileCodeIcon, tone: "text-[#5d6f86]" },
-  lock: { component: FileLockIcon, tone: "text-[#805a16]" },
-  image: { component: FileImageIcon, tone: "text-[#7b5a8f]" },
-  python: { component: FilePyIcon, tone: "text-[#3e617d]" },
-  rust: { component: FileRsIcon, tone: "text-[#8d3e34]" },
-  svg: { component: FileSvgIcon, tone: "text-[#267a7c]" },
-  text: { component: FileTextIcon, tone: "text-[#6c737c]" },
-  default: { component: DefaultFileIcon, tone: "text-[#6c737c]" },
+  typescript: {
+    component: FileTsIcon,
+    tone: "text-[var(--itera-color-icon-typescript)]",
+  },
+  javascript: {
+    component: FileJsIcon,
+    tone: "text-[var(--itera-color-icon-javascript)]",
+  },
+  jsx: { component: FileJsxIcon, tone: "text-[var(--itera-color-icon-typescript)]" },
+  tsx: { component: FileTsxIcon, tone: "text-[var(--itera-color-icon-typescript)]" },
+  css: { component: FileCssIcon, tone: "text-[var(--itera-color-primary-ink)]" },
+  html: { component: FileHtmlIcon, tone: "text-[var(--itera-color-syntax-tag)]" },
+  markdown: {
+    component: FileMdIcon,
+    tone: "text-[var(--itera-color-icon-markdown)]",
+  },
+  config: { component: FileCodeIcon, tone: "text-[var(--itera-color-muted)]" },
+  lock: { component: FileLockIcon, tone: "text-[var(--itera-color-warning)]" },
+  image: { component: FileImageIcon, tone: "text-[var(--itera-color-icon-markdown)]" },
+  python: { component: FilePyIcon, tone: "text-[var(--itera-color-icon-typescript)]" },
+  rust: { component: FileRsIcon, tone: "text-[var(--itera-color-danger)]" },
+  svg: { component: FileSvgIcon, tone: "text-[var(--itera-color-primary-ink)]" },
+  text: { component: FileTextIcon, tone: "text-[var(--itera-color-muted)]" },
+  default: { component: DefaultFileIcon, tone: "text-[var(--itera-color-muted)]" },
 };
 
 const FILE_NAME_KINDS: Record<string, FileIconKind> = {
@@ -108,7 +117,7 @@ export function FileIcon({ node }: { node: FileTreeNode }) {
       <FolderSimpleIcon
         size={15}
         weight="regular"
-        className="shrink-0 text-[#6c737c]"
+        className="shrink-0 text-[var(--itera-color-muted)]"
         aria-hidden
       />
     );

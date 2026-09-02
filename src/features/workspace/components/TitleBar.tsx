@@ -44,7 +44,7 @@ export function TitleBar({
         className="flex min-w-0 items-center gap-2.5"
       >
         <Button
-          className={`grid h-7 w-7 place-items-center rounded-[7px] border outline-none transition hover:bg-[#edf0f2] focus-visible:ring-2 focus-visible:ring-[#3c8f55] ${sidebarVisible ? "border-[#b8dfc1] bg-[#eff9f1] text-[#347d4a]" : "border-transparent text-[#6c737c]"}`}
+          className={`grid h-7 w-7 place-items-center rounded-[7px] border outline-none transition hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] ${sidebarVisible ? "border-[var(--itera-color-primary-border)] bg-[var(--itera-color-primary-soft)] text-[var(--itera-color-primary-ink)]" : "border-transparent text-[var(--itera-color-muted)]"}`}
           aria-pressed={sidebarVisible}
           aria-label="显示或隐藏文件树"
           onPress={onToggleSidebar}
@@ -52,19 +52,22 @@ export function TitleBar({
           <Icon name="panel" />
         </Button>
         <span className="pointer-events-none flex items-center gap-1.5">
-          <span className="grid h-5 w-5 place-items-center rounded-[5px] bg-[#29303a] text-white">
+          <span className="grid h-5 w-5 place-items-center rounded-[5px] bg-[var(--itera-color-ink)] text-white">
             <Icon name="code" className="h-3 w-3" />
           </span>
           <span className="text-[12.5px] font-semibold tracking-[0.01em]">砚 Yan</span>
         </span>
         <MenuTrigger>
-          <Button className="flex h-7 min-w-0 max-w-[260px] items-center gap-1.5 rounded-[7px] border border-transparent px-2 text-[12.5px] font-medium outline-none hover:border-[#dfe4e6] hover:bg-[#edf0f2] focus-visible:ring-2 focus-visible:ring-[#3c8f55]">
+          <Button className="flex h-7 min-w-0 max-w-[260px] items-center gap-1.5 rounded-[7px] border border-transparent px-2 text-[12.5px] font-medium outline-none hover:border-[var(--itera-color-border)] hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)]">
             <span className="truncate">{project?.name ?? "未打开项目"}</span>
-            <Icon name="chevron-down" className="h-3 w-3 shrink-0 text-[#6c737c]" />
+            <Icon
+              name="chevron-down"
+              className="h-3 w-3 shrink-0 text-[var(--itera-color-muted)]"
+            />
           </Button>
           <Popover
             placement="bottom start"
-            className="w-[300px] rounded-[12px] border border-[#dfe4e6] bg-white p-1.5 shadow-[0_14px_34px_-12px_rgba(41,48,58,0.3)]"
+            className="w-[300px] rounded-[12px] border border-[var(--itera-color-border)] bg-[var(--itera-color-surface)] p-1.5 shadow-[var(--itera-shadow-popover)]"
           >
             <Menu
               aria-label="项目"
@@ -80,7 +83,7 @@ export function TitleBar({
               <MenuItem
                 id="recent-label"
                 isDisabled
-                className="px-2 py-1 font-mono text-[10.5px] tracking-[0.09em] text-[#7c848d] uppercase"
+                className="px-2 py-1 font-mono text-[10.5px] tracking-[0.09em] text-[var(--itera-color-subtle)] uppercase"
               >
                 最近打开
               </MenuItem>
@@ -90,36 +93,43 @@ export function TitleBar({
                     key={item.path}
                     id={`recent:${item.path}`}
                     isDisabled={!item.available}
-                    className="flex items-center gap-2 rounded-[6px] px-2 py-1.5 outline-none hover:bg-[#edf0f2] focus-visible:bg-[#eff9f1] disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-[6px] px-2 py-1.5 outline-none hover:bg-[var(--itera-color-hover)] focus-visible:bg-[var(--itera-color-primary-soft)] disabled:opacity-50"
                   >
-                    <Icon name="folder" className="h-4 w-4 shrink-0 text-[#6c737c]" />
+                    <Icon
+                      name="folder"
+                      className="h-4 w-4 shrink-0 text-[var(--itera-color-muted)]"
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[12.5px]">{item.name}</span>
-                      <span className="block truncate font-mono text-[10.5px] text-[#7c848d]">
+                      <span className="block truncate font-mono text-[10.5px] text-[var(--itera-color-subtle)]">
                         {shortPath(item.path)}
                       </span>
                     </span>
-                    <span className="font-mono text-[10.5px] text-[#8b9299]">
+                    <span className="font-mono text-[10.5px] text-[var(--itera-color-faint)]">
                       {item.available ? formatRelativeTime(item.openedAt) : "不可用"}
                     </span>
                   </MenuItem>
                 ))
               ) : (
-                <MenuItem id="none" isDisabled className="px-2 py-1.5 text-[12px] text-[#8b9299]">
+                <MenuItem
+                  id="none"
+                  isDisabled
+                  className="px-2 py-1.5 text-[12px] text-[var(--itera-color-faint)]"
+                >
                   还没有最近项目
                 </MenuItem>
               )}
               <MenuItem
                 id="choose"
-                className="mt-1 flex items-center justify-between rounded-[6px] border-t border-[#e7ebed] px-2 py-2 text-[12.5px] outline-none hover:bg-[#edf0f2] focus-visible:bg-[#eff9f1]"
+                className="mt-1 flex items-center justify-between rounded-[6px] border-t border-[var(--itera-color-border-soft)] px-2 py-2 text-[12.5px] outline-none hover:bg-[var(--itera-color-hover)] focus-visible:bg-[var(--itera-color-primary-soft)]"
               >
                 <span>打开其他目录…</span>
-                <span className="font-mono text-[10.5px] text-[#8b9299]">⌘O</span>
+                <span className="font-mono text-[10.5px] text-[var(--itera-color-faint)]">⌘O</span>
               </MenuItem>
               {project ? (
                 <MenuItem
                   id="close"
-                  className="flex rounded-[6px] px-2 py-1.5 text-[12.5px] outline-none hover:bg-[#edf0f2] focus-visible:bg-[#eff9f1]"
+                  className="flex rounded-[6px] px-2 py-1.5 text-[12.5px] outline-none hover:bg-[var(--itera-color-hover)] focus-visible:bg-[var(--itera-color-primary-soft)]"
                 >
                   关闭当前项目
                 </MenuItem>
@@ -129,7 +139,7 @@ export function TitleBar({
         </MenuTrigger>
       </Toolbar>
 
-      <p className="pointer-events-none flex min-w-0 items-center gap-1.5 font-mono text-[11.5px] text-[#6c737c]">
+      <p className="pointer-events-none flex min-w-0 items-center gap-1.5 font-mono text-[11.5px] text-[var(--itera-color-muted)]">
         {breadcrumbParts.length
           ? breadcrumbParts.slice(0, -1).map((part) => (
               <span key={part} className="min-w-0 truncate">
@@ -138,7 +148,7 @@ export function TitleBar({
             ))
           : null}
         {breadcrumbParts[breadcrumbParts.length - 1] ? (
-          <b className="shrink-0 font-medium text-[#29303a]">
+          <b className="shrink-0 font-medium text-[var(--itera-color-ink)]">
             {breadcrumbParts[breadcrumbParts.length - 1]}
           </b>
         ) : project ? (
@@ -146,7 +156,10 @@ export function TitleBar({
         ) : null}
         {activeTab?.dirty ? (
           <>
-            <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#b67816]" />
+            <span
+              aria-hidden="true"
+              className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--itera-color-warning)]"
+            />
             <span className="sr-only">未保存</span>
           </>
         ) : null}
@@ -158,7 +171,7 @@ export function TitleBar({
         className="flex min-w-0 items-center justify-end gap-1"
       >
         <Button
-          className="flex h-7 items-center gap-1.5 rounded-[7px] border border-transparent px-2 text-[12px] text-[#6c737c] outline-none hover:bg-[#edf0f2] focus-visible:ring-2 focus-visible:ring-[#3c8f55] disabled:cursor-not-allowed disabled:opacity-45"
+          className="flex h-7 items-center gap-1.5 rounded-[7px] border border-transparent px-2 text-[12px] text-[var(--itera-color-muted)] outline-none hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed disabled:opacity-45"
           isDisabled={!activeTab || activeTab.readOnly || !activeTab.dirty}
           aria-label="保存当前文件（⌘S）"
           onPress={onSave}

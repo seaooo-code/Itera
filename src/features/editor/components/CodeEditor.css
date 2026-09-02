@@ -2,7 +2,7 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: #ffffff;
+  background: var(--itera-color-surface);
 }
 
 .code-editor .cm-editor.cm-focused {

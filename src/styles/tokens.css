@@ -1,24 +1,74 @@
 :root {
-  --itera-color-ink: #29303a;
-  --itera-color-muted: #6c737c;
-  --itera-color-subtle: #7c848d;
-  --itera-color-faint: #8b9299;
-  --itera-color-surface: #ffffff;
-  --itera-color-canvas: #f5f7f7;
-  --itera-color-hover: #edf0f2;
-  --itera-color-border: #dfe4e6;
-  --itera-color-border-soft: #e1e5e7;
-  --itera-color-primary: #3c8f55;
-  --itera-color-primary-dark: #337c49;
-  --itera-color-primary-border: #347d4a;
-  --itera-color-primary-soft: #eff9f1;
-  --itera-color-primary-muted: #b8dfc1;
-  --itera-color-warning: #805a16;
-  --itera-color-warning-soft: #fff8e8;
-  --itera-color-warning-border: #e6c98f;
-  --itera-color-danger: #8d3e34;
-  --itera-color-danger-soft: #fff6f4;
-  --itera-color-danger-border: #e4b9b1;
+  --itera-color-ink: oklch(22% 0.018 210);
+  --itera-color-muted: oklch(47.5% 0.016 210);
+  --itera-color-subtle: oklch(54.5% 0.013 210);
+  --itera-color-faint: oklch(62% 0.01 210);
+  --itera-color-surface: oklch(100% 0 0);
+  --itera-color-canvas: oklch(98% 0.004 200);
+  --itera-color-sunken: oklch(95.2% 0.006 200);
+  --itera-color-sunken-strong: oklch(93.2% 0.008 200);
+  --itera-color-hover: oklch(91.8% 0.01 200);
+  --itera-color-press: oklch(89.8% 0.011 200);
+  --itera-color-shell: oklch(86.5% 0.01 200);
+  --itera-color-border: oklch(90% 0.007 200);
+  --itera-color-border-soft: oklch(94.5% 0.005 200);
+  --itera-color-primary: oklch(56% 0.095 184);
+  --itera-color-primary-solid: oklch(45.5% 0.078 184);
+  --itera-color-primary-dark: oklch(37.5% 0.065 184);
+  --itera-color-primary-ink: oklch(42% 0.072 184);
+  --itera-color-primary-border: oklch(81.5% 0.058 184);
+  --itera-color-primary-soft: oklch(96.6% 0.024 184);
+  --itera-color-primary-soft-strong: oklch(91% 0.05 184);
+  --itera-color-primary-muted: oklch(81.5% 0.058 184);
+  --itera-color-current-line: oklch(97.6% 0.014 184);
+  --itera-color-selection: oklch(91.8% 0.045 184);
+  --itera-color-primary-ring-halo: oklch(76% 0.075 184 / 0.45);
+  --itera-color-warning: oklch(45% 0.092 72);
+  --itera-color-warning-hover: oklch(38% 0.078 72);
+  --itera-color-warning-soft: oklch(96.5% 0.024 72);
+  --itera-color-warning-hover-soft: oklch(93% 0.05 72);
+  --itera-color-warning-press-soft: oklch(90% 0.07 72);
+  --itera-color-warning-border: oklch(84.5% 0.105 72);
+  --itera-color-warning-find: oklch(93.5% 0.044 72);
+  --itera-color-warning-find-current: oklch(88.5% 0.09 72);
+  --itera-color-danger: oklch(45% 0.17 25);
+  --itera-color-danger-soft: oklch(96.5% 0.026 25);
+  --itera-color-danger-border: color-mix(
+    in oklch,
+    var(--itera-color-danger) 32%,
+    var(--itera-color-border)
+  );
+  --itera-color-syntax-keyword: oklch(34% 0.15 300);
+  --itera-color-syntax-tag: oklch(36.5% 0.13 335);
+  --itera-color-syntax-function: oklch(39% 0.125 262);
+  --itera-color-syntax-number: oklch(41% 0.15 20);
+  --itera-color-syntax-type: oklch(43% 0.065 205);
+  --itera-color-syntax-string: oklch(45% 0.115 45);
+  --itera-color-syntax-property: oklch(46.5% 0.038 200);
+  --itera-color-syntax-comment: oklch(47% 0.014 200);
+  --itera-color-syntax-punctuation: oklch(47.5% 0.008 200);
+  --itera-color-icon-typescript: oklch(44% 0.112 255);
+  --itera-color-icon-javascript: oklch(46% 0.092 80);
+  --itera-color-icon-markdown: oklch(45% 0.13 300);
+  --itera-color-line-number: oklch(54.5% 0.013 210);
+  --itera-shadow-panel:
+    0 1px 2px -1px color-mix(in oklch, var(--itera-color-ink) 11%, transparent),
+    0 10px 24px -16px color-mix(in oklch, var(--itera-color-ink) 20%, transparent);
+  --itera-shadow-popover: 0 14px 34px -12px
+    color-mix(in oklch, var(--itera-color-ink) 30%, transparent);
+  --itera-shadow-dialog: 0 30px 70px -22px
+    color-mix(in oklch, var(--itera-color-ink) 46%, transparent);
+  --itera-shadow-toast: 0 12px 30px -12px
+    color-mix(in oklch, var(--itera-color-ink) 34%, transparent);
+  --itera-shadow-find: 0 10px 26px -12px
+    color-mix(in oklch, var(--itera-color-ink) 32%, transparent);
+  --itera-shadow-welcome: 0 10px 24px -18px
+    color-mix(in oklch, var(--itera-color-ink) 35%, transparent);
+  --itera-shadow-brand: 0 12px 24px -14px
+    color-mix(in oklch, var(--itera-color-ink) 60%, transparent);
+  --itera-shadow-primary: 0 5px 12px -8px
+    color-mix(in oklch, var(--itera-color-primary-solid) 80%, transparent);
+  --itera-color-scrim: color-mix(in oklch, var(--itera-color-ink) 25%, transparent);
   --itera-font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
   --itera-font-mono:
     "JetBrains Mono Variable", "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;

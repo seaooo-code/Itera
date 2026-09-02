@@ -82,14 +82,14 @@ export function FileTree({
           aria-level={level}
           aria-expanded={node.type === "directory" ? Boolean(expandedDirs[node.path]) : undefined}
           aria-selected={node.type === "file" ? activePath === node.path : undefined}
-          className={`group flex h-[26px] w-full items-center gap-1.5 rounded-[5px] border-0 bg-transparent pr-2 text-left text-[12.5px] outline-none transition-colors hover:bg-[#edf0f2] focus-visible:ring-2 focus-visible:ring-[#3c8f55] focus-visible:ring-inset ${activePath === node.path ? "bg-[#eff9f1] font-medium" : ""}`}
+          className={`group flex h-[26px] w-full items-center gap-1.5 rounded-[5px] border-0 bg-transparent pr-2 text-left text-[12.5px] outline-none transition-colors hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${activePath === node.path ? "bg-[var(--itera-color-primary-soft)] font-medium" : ""}`}
           style={{ paddingLeft: `${8 + (level - 1) * 14}px` }}
           onClick={() =>
             node.type === "directory" ? onToggleDirectory(node.path) : onOpenFile(node.path)
           }
           onKeyDown={(event) => onTreeKeyDown(event, node)}
         >
-          <span className="flex h-3 w-3 shrink-0 items-center justify-center text-[#6c737c]">
+          <span className="flex h-3 w-3 shrink-0 items-center justify-center text-[var(--itera-color-muted)]">
             {node.type === "directory" ? (
               <Icon
                 name={expandedDirs[node.path] ? "chevron-down" : "chevron-right"}
@@ -118,7 +118,9 @@ export function FileTree({
       {nodes.length ? (
         renderNodes(nodes, 1)
       ) : (
-        <div className="px-2 py-4 text-[12px] leading-6 text-[#7c848d]">项目目录为空</div>
+        <div className="px-2 py-4 text-[12px] leading-6 text-[var(--itera-color-subtle)]">
+          项目目录为空
+        </div>
       )}
     </div>
   );

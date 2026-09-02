@@ -296,9 +296,9 @@ export function WorkspaceShell() {
   const lineSelection = activeTab ? Math.abs(activeTab.cursor.head - activeTab.cursor.anchor) : 0;
 
   return (
-    <main className="h-full w-full overflow-auto bg-[#f5f7f7] text-[#29303a]">
+    <main className="h-full w-full overflow-auto bg-[var(--itera-color-sunken)] text-[var(--itera-color-ink)]">
       <section
-        className="grid h-full min-w-[320px] w-full grid-rows-[46px_minmax(0,1fr)_28px] overflow-hidden bg-[#f5f7f7]"
+        className="grid h-full min-w-[320px] w-full grid-rows-[46px_minmax(0,1fr)_28px] overflow-hidden bg-[var(--itera-color-sunken)]"
         aria-label="砚 Yan 个人桌面 IDE"
       >
         <TitleBar
@@ -370,11 +370,13 @@ export function WorkspaceShell() {
           <div
             role="status"
             aria-live="polite"
-            className={`absolute bottom-[46px] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border px-3.5 py-2 text-[12px] shadow-[0_12px_30px_-12px_rgba(41,48,58,0.34)] ${toast.tone === "error" ? "border-[#e4b9b1] bg-[#fff6f4] text-[#8d3e34]" : toast.tone === "success" ? "border-[#b8dfc1] bg-[#f2fbf4] text-[#347d4a]" : "border-[#dfe4e6] bg-white text-[#29303a]"}`}
+            className={`absolute bottom-[46px] left-1/2 z-40 flex -translate-x-1/2 items-center gap-2 rounded-full border px-3.5 py-2 text-[12px] shadow-[var(--itera-shadow-toast)] ${toast.tone === "error" ? "border-[var(--itera-color-danger-border)] bg-[var(--itera-color-danger-soft)] text-[var(--itera-color-danger)]" : toast.tone === "success" ? "border-[var(--itera-color-primary-border)] bg-[var(--itera-color-primary-soft)] text-[var(--itera-color-primary-ink)]" : "border-[var(--itera-color-border)] bg-[var(--itera-color-surface)] text-[var(--itera-color-ink)]"}`}
           >
             <span>{toast.message}</span>
             {toast.detail ? (
-              <span className="font-mono text-[11px] text-[#7c848d]">{toast.detail}</span>
+              <span className="font-mono text-[11px] text-[var(--itera-color-subtle)]">
+                {toast.detail}
+              </span>
             ) : null}
           </div>
         ) : null}
