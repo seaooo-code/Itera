@@ -1,12 +1,48 @@
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useEffect, useState } from "react";
 import { Button, Menu, MenuItem, MenuTrigger, Popover, Toolbar } from "react-aria-components";
 import type { ProjectState, RecentProject, TabState } from "../store/types";
 import { Icon } from "../../../shared/components/Icon";
+import { isTauriRuntime } from "../../../services/tauri/runtime";
 import { shortPath } from "../../../shared/utils/path";
 import { formatRelativeTime } from "../../../shared/utils/time";
 
-const titlebarInsetClass = /Macintosh|Mac OS X/.test(navigator.userAgent)
-  ? "pl-[78px] pr-3.5"
-  : "px-3.5";
+const isMacTitlebar = /Macintosh|Mac OS X/.test(navigator.userAgent);
+
+// macOS 全屏时系统会隐藏（而非重新定位）原生红绿灯按钮，
+// 此时不应再为它们预留左侧空间，否则标题栏会留出一块空白。
+function useIsFullscreen() {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) return;
+
+    const appWindow = getCurrentWindow();
+    let disposed = false;
+
+    const syncFullscreen = async () => {
+      try {
+        const value = await appWindow.isFullscreen();
+        if (!disposed) setIsFullscreen(value);
+      } catch {
+        // 忽略查询失败，保持上一次已知状态
+      }
+    };
+
+    void syncFullscreen();
+
+    const unlistenPromise = appWindow.onResized(() => {
+      void syncFullscreen();
+    });
+
+    return () => {
+      disposed = true;
+      void unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  return isFullscreen;
+}
 
 interface TitleBarProps {
   project: ProjectState | null;
@@ -32,6 +68,8 @@ export function TitleBar({
   onSave,
 }: TitleBarProps) {
   const breadcrumbParts = activeTab?.relativePath.split("/") ?? [];
+  const isFullscreen = useIsFullscreen();
+  const titlebarInsetClass = isMacTitlebar && !isFullscreen ? "pl-[78px] pr-3.5" : "px-3.5";
 
   return (
     <header

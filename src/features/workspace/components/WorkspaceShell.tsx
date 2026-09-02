@@ -18,6 +18,7 @@ export function WorkspaceShell() {
   const expandedDirs = useWorkspaceStore((state) => state.expandedDirs);
   const tabs = useWorkspaceStore((state) => state.tabs);
   const activePath = useWorkspaceStore((state) => state.activePath);
+  const previewPath = useWorkspaceStore((state) => state.previewPath);
   const sidebarVisible = useWorkspaceStore((state) => state.sidebarVisible);
   const sidebarWidth = useWorkspaceStore((state) => state.sidebarWidth);
   const findState = useWorkspaceStore((state) => state.findState);
@@ -154,8 +155,8 @@ export function WorkspaceShell() {
   }, [closeProject, requestWithDirtyCheck]);
 
   const handleOpenFile = useCallback(
-    (path: string) => {
-      void runAction(() => openFile(path), "读取文件失败");
+    (path: string, options?: { preview?: boolean }) => {
+      void runAction(() => openFile(path, options), "读取文件失败");
     },
     [openFile, runAction],
   );
@@ -169,7 +170,7 @@ export function WorkspaceShell() {
       }
       setConfirmState({
         title: "关闭未保存文件？",
-        message: "这个标签包含尚未写回磁盘的修改。",
+        message: `如果不保存，${tab.relativePath} 中的修改将丢失。`,
         dirtyPaths: [tab.relativePath],
         savePaths: [tab.path],
         action: () => closeTab(path),
@@ -340,11 +341,13 @@ export function WorkspaceShell() {
             <EditorWorkspace
               tabs={tabs}
               activePath={activePath}
+              previewPath={previewPath}
               activeTab={activeTab}
               findState={findState}
               editorRef={editorRef}
               onSetActiveTab={setActiveTab}
               onCloseTab={handleCloseTab}
+              onPromoteTab={(path) => handleOpenFile(path, { preview: false })}
               onOpenFind={openFind}
               onCloseFind={closeFind}
               onSetFindQuery={setFindQuery}

@@ -57,6 +57,7 @@ export interface WorkspaceState {
   expandedDirs: Record<string, boolean>;
   tabs: TabState[];
   activePath: string | null;
+  previewPath: string | null;
   sidebarVisible: boolean;
   sidebarWidth: number;
   findState: FindState;
@@ -71,7 +72,7 @@ export interface WorkspaceActions {
   closeProject: () => void;
   refreshWorkspace: () => Promise<void>;
   toggleDirectory: (path: string) => void;
-  openFile: (path: string) => Promise<void>;
+  openFile: (path: string, options?: { preview?: boolean }) => Promise<void>;
   closeTab: (path: string) => void;
   setActiveTab: (path: string | null) => void;
   updateTabContent: (path: string, content: string) => void;

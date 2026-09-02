@@ -99,6 +99,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       expandedDirs: {},
       tabs: [],
       activePath: null,
+      previewPath: null,
       sidebarVisible: true,
       sidebarWidth: 264,
       findState: {
@@ -180,6 +181,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           ignoredPatterns: [],
           tabs: [],
           activePath: null,
+          previewPath: null,
           syncState: { status: "idle", error: null },
           findState: {
             ...get().findState,
@@ -247,23 +249,41 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           },
         })),
 
-      openFile: async (path) => {
+      openFile: async (path, options) => {
         const project = get().project;
         if (!project) return;
 
+        const preview = options?.preview ?? false;
         const existing = get().tabs.find((tab) => tab.path === path);
+
         if (existing) {
-          set({ activePath: path });
+          set((state) => ({
+            activePath: path,
+            previewPath: !preview && state.previewPath === path ? null : state.previewPath,
+          }));
           return;
         }
 
         try {
           const file = await readProjectFile(path);
           const tab = createTab(project.path, file);
-          set((state) => ({
-            tabs: [...state.tabs, tab],
-            activePath: path,
-          }));
+
+          set((state) => {
+            const previewTab = state.previewPath
+              ? state.tabs.find((item) => item.path === state.previewPath)
+              : undefined;
+
+            if (preview && previewTab && !previewTab.dirty) {
+              const tabs = state.tabs.map((item) => (item.path === previewTab.path ? tab : item));
+              return { tabs, activePath: path, previewPath: path };
+            }
+
+            return {
+              tabs: [...state.tabs, tab],
+              activePath: path,
+              previewPath: preview ? path : state.previewPath,
+            };
+          });
         } catch (error) {
           console.error("[Itera] 读取文件失败", { path, error });
           throw error;
@@ -279,17 +299,27 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               ? state.activePath
               : (tabs[index]?.path ?? tabs[index - 1]?.path ?? null);
 
-          return { tabs, activePath: nextActive };
+          return {
+            tabs,
+            activePath: nextActive,
+            previewPath: state.previewPath === path ? null : state.previewPath,
+          };
         }),
 
       setActiveTab: (path) => set({ activePath: path }),
 
       updateTabContent: (path, content) =>
-        set((state) => ({
-          tabs: state.tabs.map((tab) =>
-            tab.path === path ? { ...tab, content, dirty: content !== tab.diskContent } : tab,
-          ),
-        })),
+        set((state) => {
+          const tab = state.tabs.find((item) => item.path === path);
+          const dirty = tab ? content !== tab.diskContent : false;
+
+          return {
+            tabs: state.tabs.map((item) =>
+              item.path === path ? { ...item, content, dirty } : item,
+            ),
+            previewPath: dirty && state.previewPath === path ? null : state.previewPath,
+          };
+        }),
 
       updateTabCursor: (path, cursor) =>
         set((state) => ({
@@ -413,7 +443,14 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         if (lastPath && lastAvailable) {
           await get().openProject(lastPath, true);
         } else {
-          set({ project: null, tree: [], ignoredPatterns: [], tabs: [], activePath: null });
+          set({
+            project: null,
+            tree: [],
+            ignoredPatterns: [],
+            tabs: [],
+            activePath: null,
+            previewPath: null,
+          });
         }
       },
     }),

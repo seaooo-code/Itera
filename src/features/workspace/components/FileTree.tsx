@@ -21,7 +21,7 @@ interface FileTreeProps {
   nodes: FileTreeNode[];
   expandedDirs: Record<string, boolean>;
   activePath: string | null;
-  onOpenFile: (path: string) => void;
+  onOpenFile: (path: string, options?: { preview?: boolean }) => void;
   onToggleDirectory: (path: string) => void;
 }
 
@@ -66,7 +66,7 @@ export function FileTree({
         }
       } else if (event.key === "Enter" && node.type === "file") {
         event.preventDefault();
-        onOpenFile(node.path);
+        onOpenFile(node.path, { preview: true });
       }
     },
     [expandedDirs, focusNode, onOpenFile, onToggleDirectory, visibleNodes],
@@ -85,8 +85,13 @@ export function FileTree({
           className={`group flex h-[26px] w-full items-center gap-1.5 rounded-[5px] border-0 bg-transparent pr-2 text-left text-[12.5px] outline-none transition-colors hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${activePath === node.path ? "bg-[var(--itera-color-primary-soft)] font-medium" : ""}`}
           style={{ paddingLeft: `${8 + (level - 1) * 14}px` }}
           onClick={() =>
-            node.type === "directory" ? onToggleDirectory(node.path) : onOpenFile(node.path)
+            node.type === "directory"
+              ? onToggleDirectory(node.path)
+              : onOpenFile(node.path, { preview: true })
           }
+          onDoubleClick={() => {
+            if (node.type === "file") onOpenFile(node.path, { preview: false });
+          }}
           onKeyDown={(event) => onTreeKeyDown(event, node)}
         >
           <span className="flex h-3 w-3 shrink-0 items-center justify-center text-[var(--itera-color-muted)]">

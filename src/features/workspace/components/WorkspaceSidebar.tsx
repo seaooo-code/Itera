@@ -12,7 +12,7 @@ interface WorkspaceSidebarProps {
   sidebarWidth: number;
   syncStatus: "idle" | "reading" | "synced" | "failed";
   statusText: string;
-  onOpenFile: (path: string) => void;
+  onOpenFile: (path: string, options?: { preview?: boolean }) => void;
   onToggleDirectory: (path: string) => void;
   onRefresh: () => void;
   onResizeStart: (event: PointerEvent<HTMLDivElement>) => void;

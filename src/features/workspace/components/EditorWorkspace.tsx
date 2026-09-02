@@ -9,11 +9,13 @@ import { FindBar } from "./FindBar";
 interface EditorWorkspaceProps {
   tabs: TabState[];
   activePath: string | null;
+  previewPath: string | null;
   activeTab: TabState | null;
   findState: FindState;
   editorRef: RefObject<CodeEditorHandle | null>;
   onSetActiveTab: (path: string) => void;
   onCloseTab: (path: string) => void;
+  onPromoteTab: (path: string) => void;
   onOpenFind: () => void;
   onCloseFind: () => void;
   onSetFindQuery: (query: string) => void;
@@ -28,11 +30,13 @@ interface EditorWorkspaceProps {
 export function EditorWorkspace({
   tabs,
   activePath,
+  previewPath,
   activeTab,
   findState,
   editorRef,
   onSetActiveTab,
   onCloseTab,
+  onPromoteTab,
   onOpenFind,
   onCloseFind,
   onSetFindQuery,
@@ -63,26 +67,33 @@ export function EditorWorkspace({
                 key={tab.path}
                 id={tab.path}
                 className={`group relative flex h-7 max-w-[212px] shrink-0 items-center gap-1.5 rounded-[7px] border border-transparent pl-[11px] pr-[5px] text-[12.5px] text-[var(--itera-color-muted)] outline-none transition hover:bg-[var(--itera-color-hover)] focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] ${tab.path === activePath ? "bg-[var(--itera-color-primary-soft)] text-[var(--itera-color-ink)] before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:rounded-l-[7px] before:bg-[var(--itera-color-primary-border)]" : ""}`}
+                onDoubleClick={() => onPromoteTab(tab.path)}
               >
                 <FileIcon node={{ name: tab.name, path: tab.path, type: "file" }} />
-                <span className="min-w-0 flex-1 truncate">{tab.name}</span>
-                {tab.dirty ? (
-                  <>
-                    <span
-                      aria-hidden="true"
-                      className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--itera-color-warning)] group-hover:hidden"
-                    />
-                    <span className="sr-only">未保存</span>
-                  </>
-                ) : null}
-                <Button
-                  className="mr-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-[5px] text-[var(--itera-color-faint)] opacity-0 outline-none hover:bg-[var(--itera-color-press)] hover:text-[var(--itera-color-ink)] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] group-hover:opacity-100"
-                  aria-label={`关闭 ${tab.name}`}
-                  onClick={(event) => event.stopPropagation()}
-                  onPress={() => onCloseTab(tab.path)}
+                <span
+                  className={`min-w-0 flex-1 truncate ${tab.path === previewPath ? "italic" : ""}`}
                 >
-                  <Icon name="close" className="h-3 w-3" />
-                </Button>
+                  {tab.name}
+                </span>
+                <span className="relative mr-0.5 grid h-5 w-5 shrink-0 place-items-center">
+                  {tab.dirty ? (
+                    <>
+                      <span
+                        aria-hidden="true"
+                        className="absolute h-1.5 w-1.5 rounded-full bg-[var(--itera-color-warning)] transition-opacity group-hover:opacity-0"
+                      />
+                      <span className="sr-only">未保存</span>
+                    </>
+                  ) : null}
+                  <Button
+                    className="absolute grid h-5 w-5 place-items-center rounded-[5px] text-[var(--itera-color-faint)] opacity-0 outline-none hover:bg-[var(--itera-color-press)] hover:text-[var(--itera-color-ink)] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] group-hover:opacity-100"
+                    aria-label={`关闭 ${tab.name}`}
+                    onClick={(event) => event.stopPropagation()}
+                    onPress={() => onCloseTab(tab.path)}
+                  >
+                    <Icon name="close" className="h-3 w-3" />
+                  </Button>
+                </span>
               </Tab>
             ))}
           </TabList>
