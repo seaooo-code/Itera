@@ -22,10 +22,11 @@ import {
   drawSelection,
   dropCursor,
   GutterMarker,
-  gutter,
   highlightActiveLine,
+  highlightActiveLineGutter,
   highlightSpecialChars,
   keymap,
+  lineNumberMarkers,
   lineNumbers,
   rectangularSelection,
   type EditorView,
@@ -47,6 +48,7 @@ export const editorSetup: Extension = [
   rectangularSelection(),
   crosshairCursor(),
   highlightActiveLine(),
+  highlightActiveLineGutter(),
   highlightSelectionMatches(),
   keymap.of([
     ...closeBracketsKeymap,
@@ -62,9 +64,10 @@ export const editorSetup: Extension = [
 type DiffOperation = "equal" | "delete" | "insert";
 type LineChangeKind = "added" | "modified";
 
-interface LineChange {
+export interface LineChange {
   kind?: LineChangeKind;
-  hasDeletion: boolean;
+  deletedCount: number;
+  deletionEdge?: "top" | "bottom";
 }
 
 const MAX_LCS_CELLS = 250_000;
@@ -188,14 +191,19 @@ export function computeLineChanges(before: string, after: string) {
     for (let offset = 0; offset < insertedCount; offset += 1) {
       changes.set(currentLine + offset, {
         kind: offset < modifiedCount ? "modified" : "added",
-        hasDeletion: false,
+        deletedCount: 0,
       });
     }
 
     if (deletedCount > insertedCount) {
-      const markerLine = Math.min(afterLineCount, Math.max(1, currentLine + insertedCount));
+      const deletionLine = currentLine + insertedCount;
+      const markerLine = Math.min(afterLineCount, Math.max(1, deletionLine));
       const existing = changes.get(markerLine);
-      changes.set(markerLine, { ...existing, hasDeletion: true });
+      changes.set(markerLine, {
+        ...existing,
+        deletedCount: (existing?.deletedCount ?? 0) + deletedCount - insertedCount,
+        deletionEdge: deletionLine > afterLineCount ? "bottom" : "top",
+      });
     }
 
     currentLine += insertedCount;
@@ -204,17 +212,35 @@ export function computeLineChanges(before: string, after: string) {
   return changes;
 }
 
+export interface LineChangeSummary {
+  added: number;
+  modified: number;
+  deleted: number;
+}
+
+export function summarizeLineChanges(before: string, after: string): LineChangeSummary {
+  const summary: LineChangeSummary = { added: 0, modified: 0, deleted: 0 };
+  for (const change of computeLineChanges(before, after).values()) {
+    if (change.kind === "added") summary.added += 1;
+    if (change.kind === "modified") summary.modified += 1;
+    summary.deleted += change.deletedCount;
+  }
+  return summary;
+}
+
 class LineChangeMarker extends GutterMarker {
   readonly elementClass: string;
 
   constructor(
     readonly kind: LineChangeKind | undefined,
-    readonly hasDeletion: boolean,
+    readonly deletedCount: number,
+    readonly deletionEdge: LineChange["deletionEdge"],
   ) {
     super();
     this.elementClass = [
       this.kind ? `cm-change-${this.kind}` : "",
-      this.hasDeletion ? "cm-change-deleted" : "",
+      this.deletedCount > 0 ? "cm-change-deleted" : "",
+      this.deletionEdge === "bottom" ? "cm-change-deleted-bottom" : "",
     ]
       .filter(Boolean)
       .join(" ");
@@ -224,7 +250,8 @@ class LineChangeMarker extends GutterMarker {
     return (
       other instanceof LineChangeMarker &&
       other.kind === this.kind &&
-      other.hasDeletion === this.hasDeletion
+      other.deletedCount === this.deletedCount &&
+      other.deletionEdge === this.deletionEdge
     );
   }
 }
@@ -235,7 +262,11 @@ function buildLineChangeMarkers(originalValue: string, document: Text) {
   for (const [lineNumber, change] of computeLineChanges(originalValue, document.toString())) {
     const safeLineNumber = Math.min(document.lines, Math.max(1, lineNumber));
     const lineStart = document.line(safeLineNumber).from;
-    builder.add(lineStart, lineStart, new LineChangeMarker(change.kind, change.hasDeletion));
+    builder.add(
+      lineStart,
+      lineStart,
+      new LineChangeMarker(change.kind, change.deletedCount, change.deletionEdge),
+    );
   }
 
   return builder.finish();
@@ -248,11 +279,7 @@ export function lineChangeExtension(originalValue: string): Extension {
       transaction.docChanged
         ? buildLineChangeMarkers(originalValue, transaction.state.doc)
         : markers,
-    provide: (field) =>
-      gutter({
-        class: "cm-changeGutter",
-        markers: (view) => view.state.field(field),
-      }),
+    provide: (field) => lineNumberMarkers.from(field),
   });
 
   return lineChanges;

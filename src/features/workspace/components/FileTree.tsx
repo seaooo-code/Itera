@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useRef, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { FileTreeNode } from "../../../services/tauri/filesystem";
 import { Icon } from "../../../shared/components/Icon";
+import type { TreeChangeKind } from "../store/types";
 import { FileIcon } from "./FileIcon";
 
 function getVisibleNodes(nodes: FileTreeNode[], expandedDirs: Record<string, boolean>) {
@@ -21,8 +22,10 @@ interface FileTreeProps {
   nodes: FileTreeNode[];
   expandedDirs: Record<string, boolean>;
   activePath: string | null;
+  openedFiles: ReadonlySet<string>;
   dirtyFiles: ReadonlySet<string>;
-  dirtyDirectories: ReadonlySet<string>;
+  conflictFiles: ReadonlySet<string>;
+  treeChanges: Record<string, TreeChangeKind>;
   onOpenFile: (path: string, options?: { preview?: boolean }) => void;
   onToggleDirectory: (path: string) => void;
 }
@@ -31,55 +34,114 @@ export function FileTree({
   nodes,
   expandedDirs,
   activePath,
+  openedFiles,
   dirtyFiles,
-  dirtyDirectories,
+  conflictFiles,
+  treeChanges,
   onOpenFile,
   onToggleDirectory,
 }: FileTreeProps) {
   const treeRef = useRef<HTMLDivElement>(null);
   const visibleNodes = useMemo(() => getVisibleNodes(nodes, expandedDirs), [expandedDirs, nodes]);
+  const visiblePaths = useMemo(
+    () => new Set(visibleNodes.map((node) => node.path)),
+    [visibleNodes],
+  );
+  const [focusedPath, setFocusedPath] = useState<string | null>(null);
+  const tabStopPath =
+    (focusedPath && visiblePaths.has(focusedPath) ? focusedPath : null) ??
+    (activePath && visiblePaths.has(activePath) ? activePath : null) ??
+    visibleNodes[0]?.path ??
+    null;
+
+  useEffect(() => {
+    if (focusedPath && !visiblePaths.has(focusedPath)) {
+      setFocusedPath(null);
+    }
+  }, [focusedPath, visiblePaths]);
 
   const focusNode = useCallback((path: string) => {
+    setFocusedPath(path);
     const target = Array.from(
       treeRef.current?.querySelectorAll<HTMLElement>("[data-tree-path]") ?? [],
     ).find((item) => item.dataset.treePath === path);
     target?.focus();
   }, []);
 
+  const focusAt = useCallback(
+    (index: number) => {
+      const node = visibleNodes[Math.max(0, Math.min(visibleNodes.length - 1, index))];
+      if (node) focusNode(node.path);
+    },
+    [focusNode, visibleNodes],
+  );
+
   const onTreeKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>, node: FileTreeNode) => {
       const currentIndex = visibleNodes.findIndex((item) => item.path === node.path);
+      if (currentIndex < 0) return;
 
-      if (event.key === "ArrowDown" && currentIndex < visibleNodes.length - 1) {
-        event.preventDefault();
-        focusNode(visibleNodes[currentIndex + 1].path);
-      } else if (event.key === "ArrowUp" && currentIndex > 0) {
-        event.preventDefault();
-        focusNode(visibleNodes[currentIndex - 1].path);
-      } else if (event.key === "ArrowRight" && node.type === "directory") {
-        event.preventDefault();
-        if (!expandedDirs[node.path]) {
-          onToggleDirectory(node.path);
-        } else if (node.children?.[0]) {
-          focusNode(node.children[0].path);
-        }
-      } else if (event.key === "ArrowLeft" && node.type === "directory") {
-        if (expandedDirs[node.path]) {
+      switch (event.key) {
+        case "ArrowDown":
           event.preventDefault();
-          onToggleDirectory(node.path);
-        }
-      } else if (event.key === "Enter" && node.type === "file") {
-        event.preventDefault();
-        onOpenFile(node.path, { preview: true });
+          focusAt(currentIndex + 1);
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          focusAt(currentIndex - 1);
+          break;
+        case "Home":
+          event.preventDefault();
+          focusAt(0);
+          break;
+        case "End":
+          event.preventDefault();
+          focusAt(visibleNodes.length - 1);
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          if (node.type === "directory" && !expandedDirs[node.path]) {
+            onToggleDirectory(node.path);
+          } else {
+            focusAt(currentIndex + 1);
+          }
+          break;
+        case "ArrowLeft":
+          event.preventDefault();
+          if (node.type === "directory" && expandedDirs[node.path]) {
+            onToggleDirectory(node.path);
+          } else {
+            focusAt(currentIndex - 1);
+          }
+          break;
+        case "Enter":
+          if (node.type === "file") {
+            event.preventDefault();
+            onOpenFile(node.path, { preview: !event.shiftKey });
+          }
+          break;
+        default:
+          break;
       }
     },
-    [expandedDirs, focusNode, onOpenFile, onToggleDirectory, visibleNodes],
+    [expandedDirs, focusAt, onOpenFile, onToggleDirectory, visibleNodes],
   );
 
   const renderNodes = (items: FileTreeNode[], level: number) =>
     items.map((node) => {
-      const isDirtyFile = node.type === "file" && dirtyFiles.has(node.path);
-      const containsDirtyFile = node.type === "directory" && dirtyDirectories.has(node.path);
+      const isFile = node.type === "file";
+      const isActive = isFile && activePath === node.path;
+      const isOpened = isFile && openedFiles.has(node.path);
+      const isDirty = isFile && dirtyFiles.has(node.path);
+      const hasConflict = isFile && conflictFiles.has(node.path);
+      const treeChange = isFile ? treeChanges[node.path] : undefined;
+      const changeMarker = hasConflict
+        ? { glyph: "!", label: "磁盘上已更改，与未保存修改冲突", isConflict: true }
+        : treeChange === "added"
+          ? { glyph: "+", label: "外部新增", isConflict: false }
+          : treeChange === "reloaded"
+            ? { glyph: "~", label: "外部已修改，已重新载入", isConflict: false }
+            : null;
 
       return (
         <div key={node.path}>
@@ -89,9 +151,11 @@ export function FileTree({
             data-tree-path={node.path}
             aria-level={level}
             aria-expanded={node.type === "directory" ? Boolean(expandedDirs[node.path]) : undefined}
-            aria-selected={node.type === "file" ? activePath === node.path : undefined}
-            className={`group flex h-[26px] w-full items-center gap-1.5 rounded-[5px] border-0 bg-transparent pr-2 text-left text-[12.5px] outline-none transition-colors hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${activePath === node.path ? "bg-[var(--itera-color-primary-soft)] font-medium" : ""}`}
-            style={{ paddingLeft: `${8 + (level - 1) * 14}px` }}
+            aria-selected={isFile ? isActive : undefined}
+            tabIndex={node.path === tabStopPath ? 0 : -1}
+            className={`group relative flex h-[26px] w-full select-none items-center gap-1.5 rounded-[5px] border-0 bg-transparent pr-1.5 text-left text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${isActive ? "bg-[var(--itera-color-primary-soft)] before:absolute before:inset-y-[3px] before:left-0 before:w-0.5 before:rounded-[1px] before:bg-[var(--itera-color-primary)] hover:bg-[var(--itera-color-primary-soft-strong)]" : "hover:bg-[var(--itera-color-hover)]"}`}
+            style={{ paddingLeft: `${6 + (level - 1) * 13 + (isFile ? 18 : 0)}px` }}
+            onFocus={() => setFocusedPath(node.path)}
             onClick={() =>
               node.type === "directory"
                 ? onToggleDirectory(node.path)
@@ -102,26 +166,39 @@ export function FileTree({
             }}
             onKeyDown={(event) => onTreeKeyDown(event, node)}
           >
-            <span className="flex h-3 w-3 shrink-0 items-center justify-center text-[var(--itera-color-muted)]">
-              {node.type === "directory" ? (
+            {node.type === "directory" ? (
+              <span className="grid h-3 w-3 shrink-0 place-items-center text-[var(--itera-color-muted)]">
                 <Icon
-                  name={expandedDirs[node.path] ? "chevron-down" : "chevron-right"}
-                  className="h-3 w-3"
+                  name="chevron-right"
+                  className={`h-3 w-3 transition-transform ${expandedDirs[node.path] ? "rotate-90" : ""}`}
                 />
-              ) : null}
-            </span>
+              </span>
+            ) : null}
             <FileIcon node={node} />
-            <span className="min-w-0 flex-1 truncate">{node.name}</span>
-            {isDirtyFile || containsDirtyFile ? (
-              <span className="grid h-4 w-4 shrink-0 place-items-center">
+            <span
+              className={`min-w-0 flex-1 truncate ${isActive ? "font-medium text-[var(--itera-color-ink)]" : isFile && !isOpened ? "text-[var(--itera-color-muted)]" : "text-[var(--itera-color-ink)]"}`}
+            >
+              {node.name}
+            </span>
+            {changeMarker ? (
+              <>
                 <span
                   aria-hidden="true"
-                  className={`rounded-full bg-[var(--itera-color-warning)] ${isDirtyFile ? "h-1.5 w-1.5" : "h-1 w-1 opacity-60"}`}
-                />
-                <span className="sr-only">
-                  {isDirtyFile ? "有未保存修改" : "包含有未保存修改的文件"}
+                  className={`grid h-[15px] w-[15px] shrink-0 place-items-center rounded-[4px] font-mono text-[11px] font-semibold leading-none ${changeMarker.isConflict ? "bg-[var(--itera-color-warning-hover-soft)] text-[var(--itera-color-warning)]" : "text-[var(--itera-color-muted)]"}`}
+                >
+                  {changeMarker.glyph}
                 </span>
-              </span>
+                <span className="sr-only">{changeMarker.label}</span>
+              </>
+            ) : null}
+            {isDirty ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--itera-color-warning-marker)]"
+                />
+                <span className="sr-only">未保存</span>
+              </>
             ) : null}
           </button>
           {node.type === "directory" && expandedDirs[node.path] && node.children?.length ? (
@@ -138,7 +215,7 @@ export function FileTree({
       ref={treeRef}
       role="tree"
       aria-label="项目文件树"
-      className="min-h-0 flex-1 overflow-auto px-1.5 py-1.5"
+      className="min-h-0 flex-1 overflow-auto px-1.5 pb-2.5 pt-1.5"
     >
       {nodes.length ? (
         renderNodes(nodes, 1)

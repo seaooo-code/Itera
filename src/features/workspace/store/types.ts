@@ -35,6 +35,7 @@ export interface TabState {
   byteLength: number;
   externalConflict: boolean;
   missing: boolean;
+  diskNoticeDismissed: boolean;
 }
 
 export interface FindState {
@@ -50,9 +51,20 @@ export interface SyncState {
   error: string | null;
 }
 
+export type TreeChangeKind = "added" | "reloaded";
+
+export interface ExternalChangeSummary {
+  occurredAt: number;
+  added: string[];
+  modified: string[];
+  deleted: string[];
+}
+
 export interface WorkspaceState {
   project: ProjectState | null;
   tree: FileTreeNode[];
+  treeChanges: Record<string, TreeChangeKind>;
+  externalChangeSummary: ExternalChangeSummary | null;
   ignoredPatterns: string[];
   expandedDirs: Record<string, boolean>;
   tabs: TabState[];
@@ -80,6 +92,8 @@ export interface WorkspaceActions {
   updateTabScroll: (path: string, scrollTop: number) => void;
   saveFile: (path?: string) => Promise<void>;
   restoreFile: (path?: string) => void;
+  dismissDiskNotice: (path?: string) => void;
+  dismissExternalChangeSummary: () => void;
   toggleSidebar: () => void;
   resizeSidebar: (width: number) => void;
   openFind: () => void;

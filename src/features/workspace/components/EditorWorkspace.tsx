@@ -2,8 +2,9 @@ import { useEffect, useRef, type RefObject } from "react";
 import { Button, Tab, TabList, Tabs } from "react-aria-components";
 import { CodeEditor, type CodeEditorHandle } from "../../editor/components/CodeEditor";
 import { fileExtension } from "../../../shared/utils/path";
-import type { CursorState, FindState, TabState } from "../store/types";
+import type { CursorState, FindState, TabState, TreeChangeKind } from "../store/types";
 import { Icon } from "../../../shared/components/Icon";
+import { FilePreview } from "./FilePreview";
 import { FindBar } from "./FindBar";
 
 interface TabFileBadgeDefinition {
@@ -74,6 +75,8 @@ interface EditorWorkspaceProps {
   tabs: TabState[];
   activePath: string | null;
   previewPath: string | null;
+  previewRevision: number | null;
+  treeChanges: Record<string, TreeChangeKind>;
   activeTab: TabState | null;
   findState: FindState;
   editorRef: RefObject<CodeEditorHandle | null>;
@@ -85,7 +88,7 @@ interface EditorWorkspaceProps {
   onSetFindQuery: (query: string) => void;
   onSetFindCaseSensitive: (value: boolean) => void;
   onFindMove: (direction: 1 | -1) => void;
-  onRestoreFile: (path: string) => void;
+  onDismissDiskNotice: (path: string) => void;
   onUpdateContent: (path: string, content: string) => void;
   onUpdateCursor: (path: string, cursor: CursorState) => void;
   onUpdateScroll: (path: string, scrollTop: number) => void;
@@ -95,6 +98,8 @@ export function EditorWorkspace({
   tabs,
   activePath,
   previewPath,
+  previewRevision,
+  treeChanges,
   activeTab,
   findState,
   editorRef,
@@ -106,7 +111,7 @@ export function EditorWorkspace({
   onSetFindQuery,
   onSetFindCaseSensitive,
   onFindMove,
-  onRestoreFile,
+  onDismissDiskNotice,
   onUpdateContent,
   onUpdateCursor,
   onUpdateScroll,
@@ -119,20 +124,24 @@ export function EditorWorkspace({
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const target = event.target;
-      if (
-        target instanceof HTMLElement &&
-        target.getAttribute("role") === "tab" &&
-        (event.key === "Delete" || event.key === "Backspace") &&
-        activePath
-      ) {
+      if (!(target instanceof HTMLElement) || target.getAttribute("role") !== "tab") return;
+      if ((event.key === "Delete" || event.key === "Backspace") && activePath) {
         event.preventDefault();
         onCloseTab(activePath);
+      } else if (event.key === "Enter" && activePath && activePath === previewPath) {
+        event.preventDefault();
+        onPromoteTab(activePath);
       }
     };
 
     tabList.addEventListener("keydown", handleKeyDown);
     return () => tabList.removeEventListener("keydown", handleKeyDown);
-  }, [activePath, onCloseTab]);
+  }, [activePath, onCloseTab, onPromoteTab, previewPath]);
+
+  const showDiskNotice =
+    activeTab &&
+    !activeTab.diskNoticeDismissed &&
+    (activeTab.externalConflict || activeTab.missing);
 
   return (
     <section
@@ -152,22 +161,37 @@ export function EditorWorkspace({
           >
             {tabs.map((tab) => {
               const isActive = tab.path === activePath;
+              const isPreview = tab.path === previewPath;
               const diskState = tab.missing
                 ? { glyph: "−", label: "已在磁盘上删除", tone: "danger" }
                 : tab.externalConflict
                   ? { glyph: "!", label: "磁盘上已更改，与未保存修改冲突", tone: "warning" }
-                  : null;
-
+                  : treeChanges[tab.path] === "reloaded"
+                    ? { glyph: "~", label: "外部已修改，已重新载入", tone: "neutral" }
+                    : null;
               return (
                 <Tab
                   key={tab.path}
                   id={tab.path}
-                  className={`group relative flex h-7 max-w-[212px] shrink-0 items-center gap-[7px] rounded-[7px] border border-transparent pl-[11px] text-[12.5px] text-[var(--itera-color-muted)] outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${isActive ? "bg-[var(--itera-color-primary-soft)] font-medium text-[var(--itera-color-ink)] before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-[var(--itera-color-primary)] hover:bg-[var(--itera-color-primary-soft-strong)]" : "hover:bg-[var(--itera-color-sunken)] hover:text-[var(--itera-color-ink)]"}`}
+                  className={`group relative flex h-7 max-w-[212px] shrink-0 select-none items-center gap-[7px] rounded-[7px] border border-transparent pl-[11px] text-[12.5px] text-[var(--itera-color-muted)] outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${isActive ? "bg-[var(--itera-color-primary-soft)] font-medium text-[var(--itera-color-ink)] hover:bg-[var(--itera-color-primary-soft-strong)]" : "hover:bg-[var(--itera-color-sunken)] hover:text-[var(--itera-color-ink)]"}`}
                   onDoubleClick={() => onPromoteTab(tab.path)}
                 >
+                  {isActive ? (
+                    <span
+                      aria-hidden="true"
+                      className={`pointer-events-none absolute left-0 w-0.5 ${isPreview ? "inset-y-[6px]" : "inset-y-0 bg-[var(--itera-color-primary)]"}`}
+                    >
+                      {isPreview ? (
+                        <>
+                          <i className="absolute inset-x-0 top-0 h-1 bg-[var(--itera-color-primary)]" />
+                          <i className="absolute inset-x-0 bottom-0 h-1 bg-[var(--itera-color-primary)]" />
+                        </>
+                      ) : null}
+                    </span>
+                  ) : null}
                   <TabFileBadge name={tab.name} />
                   <span
-                    className={`min-w-0 flex-1 truncate ${tab.path === previewPath ? "italic" : ""} ${tab.missing ? "decoration-[1.5px] decoration-[var(--itera-color-danger)] line-through" : ""}`}
+                    className={`min-w-0 flex-1 truncate ${isPreview ? "italic" : ""} ${tab.missing ? "decoration-[1.5px] decoration-[var(--itera-color-danger)] line-through" : ""}`}
                   >
                     {tab.name}
                   </span>
@@ -175,7 +199,7 @@ export function EditorWorkspace({
                     <>
                       <span
                         aria-hidden="true"
-                        className={`grid h-[15px] w-[15px] shrink-0 place-items-center rounded-[4px] font-mono text-[11px] font-semibold leading-none ${diskState.tone === "danger" ? "bg-[var(--itera-color-danger-hover-soft)] text-[var(--itera-color-danger)]" : "bg-[var(--itera-color-warning-hover-soft)] text-[var(--itera-color-warning)]"}`}
+                        className={`grid h-[15px] w-[15px] shrink-0 place-items-center rounded-[4px] font-mono text-[11px] font-semibold leading-none ${diskState.tone === "danger" ? "bg-[var(--itera-color-danger-hover-soft)] text-[var(--itera-color-danger)]" : diskState.tone === "warning" ? "bg-[var(--itera-color-warning-hover-soft)] text-[var(--itera-color-warning)]" : "text-[var(--itera-color-muted)]"}`}
                       >
                         {diskState.glyph}
                       </span>
@@ -183,6 +207,7 @@ export function EditorWorkspace({
                     </>
                   ) : null}
                   {tab.dirty ? <span className="sr-only">（未保存）</span> : null}
+                  {isPreview ? <span className="sr-only">（预览态，双击或按回车固定）</span> : null}
                   <span className="relative mr-[5px] grid h-5 w-5 shrink-0 place-items-center">
                     <Button
                       className={`peer relative grid h-5 w-5 place-items-center rounded-[5px] text-[var(--itera-color-muted)] outline-none before:absolute before:-inset-0.5 hover:text-[var(--itera-color-ink)] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset group-hover:opacity-100 ${isActive ? "hover:bg-[var(--itera-color-primary-soft-strong)]" : "hover:bg-[var(--itera-color-press)]"} ${tab.dirty ? "opacity-0" : "opacity-100"}`}
@@ -204,7 +229,7 @@ export function EditorWorkspace({
             })}
           </TabList>
           <Button
-            isDisabled={!activeTab}
+            isDisabled={!activeTab || activeTab.binary}
             className="mr-1.5 grid h-7 w-7 self-center place-items-center rounded-[6px] border border-transparent text-[var(--itera-color-muted)] outline-none hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:opacity-40"
             aria-label="打开文件内查找（⌘F）"
             onPress={onOpenFind}
@@ -212,66 +237,105 @@ export function EditorWorkspace({
             <Icon name="search" className="h-3.5 w-3.5" />
           </Button>
         </div>
+        {showDiskNotice ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`flex min-h-[33px] shrink-0 items-center gap-[9px] px-2 py-[7px] pl-3 text-[12px] leading-[1.6] ${activeTab.missing ? "bg-[var(--itera-color-danger-soft)] text-[var(--itera-color-danger)]" : "bg-[var(--itera-color-warning-soft)] text-[var(--itera-color-warning)]"}`}
+          >
+            <span
+              aria-hidden="true"
+              className={`grid h-[15px] w-[15px] shrink-0 place-items-center rounded-[4px] font-mono text-[11px] font-semibold ${activeTab.missing ? "bg-[var(--itera-color-danger-hover-soft)]" : "bg-[var(--itera-color-warning-hover-soft)]"}`}
+            >
+              {activeTab.missing ? "−" : "!"}
+            </span>
+            <span className="min-w-0 flex-1">
+              <b className="font-mono font-semibold">{activeTab.name}</b>{" "}
+              {activeTab.missing
+                ? "已从磁盘上删除。编辑器中的内容仍然保留，⌘S 会把它重新写回。"
+                : "在磁盘上已更改。你的未保存修改仍保留在编辑器中，没有被覆盖。"}
+            </span>
+            <Button
+              className={`grid h-6 w-6 shrink-0 place-items-center rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-inset ${activeTab.missing ? "hover:bg-[var(--itera-color-danger-hover-soft)]" : "hover:bg-[var(--itera-color-warning-hover-soft)]"}`}
+              aria-label="收起磁盘状态提示"
+              onPress={() => {
+                onDismissDiskNotice(activeTab.path);
+                queueMicrotask(() => editorRef.current?.focus());
+              }}
+            >
+              <Icon name="close" className="h-2.5 w-2.5" />
+            </Button>
+          </div>
+        ) : null}
         <div className="relative min-h-0 flex-1 overflow-hidden">
           {activeTab ? (
             <div className="relative h-full">
-              <FindBar
-                isOpen={findState.isOpen}
-                query={findState.query}
-                caseSensitive={findState.caseSensitive}
-                currentMatch={findState.currentMatch}
-                totalMatches={findState.totalMatches}
-                onQueryChange={onSetFindQuery}
-                onCaseSensitiveChange={onSetFindCaseSensitive}
-                onMove={onFindMove}
-                onClose={onCloseFind}
-              />
-              {activeTab.externalConflict ? (
-                <div
-                  role="status"
-                  aria-live="polite"
-                  className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b border-[var(--itera-color-warning-border)] bg-[var(--itera-color-warning-soft)] px-4 py-2 text-[12px] text-[var(--itera-color-warning)]"
-                >
-                  <Icon name="warning" className="h-3.5 w-3.5 shrink-0" />
-                  磁盘上的文件已发生变化，本地未保存草稿仍被保留。保存会覆盖磁盘内容。
-                  <Button
-                    className="ml-auto text-[11px] underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)]"
-                    onPress={() => onRestoreFile(activeTab.path)}
-                  >
-                    恢复磁盘版本
-                  </Button>
-                </div>
-              ) : null}
-              <div className={`h-full ${activeTab.externalConflict ? "pt-9" : ""}`}>
-                <CodeEditor
-                  ref={editorRef}
-                  value={activeTab.content}
-                  originalValue={activeTab.diskContent}
-                  onChange={(content) => onUpdateContent(activeTab.path, content)}
-                  language={activeTab.language}
-                  readOnly={activeTab.readOnly}
-                  cursor={activeTab.cursor}
-                  scrollTop={activeTab.scrollTop}
-                  searchQuery={findState.query}
-                  searchCaseSensitive={findState.caseSensitive}
-                  onCursorChange={(cursor) => onUpdateCursor(activeTab.path, cursor)}
-                  onScrollChange={(scrollTop) => onUpdateScroll(activeTab.path, scrollTop)}
-                  ariaLabel={`${activeTab.name} 编辑器`}
+              {activeTab.binary ? (
+                <FilePreview
+                  key={`${activeTab.path}:${previewRevision ?? 0}`}
+                  path={activeTab.path}
+                  name={activeTab.name}
+                  byteLength={activeTab.byteLength}
                 />
-              </div>
+              ) : (
+                <>
+                  <FindBar
+                    isOpen={findState.isOpen}
+                    query={findState.query}
+                    caseSensitive={findState.caseSensitive}
+                    currentMatch={findState.currentMatch}
+                    totalMatches={findState.totalMatches}
+                    onQueryChange={onSetFindQuery}
+                    onCaseSensitiveChange={onSetFindCaseSensitive}
+                    onMove={onFindMove}
+                    onClose={onCloseFind}
+                  />
+                  <div className="h-full">
+                    <CodeEditor
+                      ref={editorRef}
+                      value={activeTab.content}
+                      originalValue={activeTab.missing ? activeTab.content : activeTab.diskContent}
+                      onChange={(content) => onUpdateContent(activeTab.path, content)}
+                      language={activeTab.language}
+                      readOnly={activeTab.readOnly}
+                      cursor={activeTab.cursor}
+                      scrollTop={activeTab.scrollTop}
+                      searchQuery={findState.query}
+                      searchCaseSensitive={findState.caseSensitive}
+                      onCursorChange={(cursor) => onUpdateCursor(activeTab.path, cursor)}
+                      onScrollChange={(scrollTop) => onUpdateScroll(activeTab.path, scrollTop)}
+                      ariaLabel={`${activeTab.name} 编辑器`}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <div className="grid h-full place-items-center px-6 text-center">
               <div>
-                <div className="mx-auto mb-3 grid h-9 w-9 place-items-center rounded-[8px] border border-[var(--itera-color-border)] text-[var(--itera-color-subtle)]">
-                  <Icon name="code" className="h-4 w-4" />
+                <div className="mx-auto grid h-[34px] w-[34px] place-items-center rounded-[9px] bg-[var(--itera-color-sunken)] text-[var(--itera-color-muted)]">
+                  <Icon name="code" className="h-[18px] w-[18px]" />
                 </div>
-                <h2 className="m-0 text-[13px] font-medium text-[var(--itera-color-ink)]">
-                  还没有打开文件
+                <h2 className="mb-0 mt-3.5 text-[14px] font-semibold text-[var(--itera-color-ink)]">
+                  当前没有打开的文件
                 </h2>
-                <p className="mb-0 mt-1.5 text-[12px] text-[var(--itera-color-subtle)]">
-                  从左侧文件树选择一个文件开始编辑。
+                <p className="mx-auto mb-0 mt-[7px] max-w-[40ch] text-[12.5px] leading-[1.7] text-[var(--itera-color-muted)]">
+                  单击文件树中的文件即可预览，双击固定为常驻 Tab。固定的 Tab 会保留到下次启动。
                 </p>
+                <div className="mt-[18px] flex justify-center gap-[18px]">
+                  {[
+                    ["⌘O", "打开项目"],
+                    ["⇧⏎", "在文件树中直接固定"],
+                    ["⌘B", "显示 / 隐藏文件树"],
+                  ].map(([key, label]) => (
+                    <div key={key} className="grid justify-items-center gap-1">
+                      <kbd className="rounded-[5px] bg-[var(--itera-color-sunken)] px-[7px] py-[3px] font-mono text-[11px] text-[var(--itera-color-ink)]">
+                        {key}
+                      </kbd>
+                      <span className="text-[11.5px] text-[var(--itera-color-muted)]">{label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

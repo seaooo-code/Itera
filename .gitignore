@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
+/public/file-viewer/
 dist-ssr
 *.local
 

@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import type { CodeEditorHandle } from "../../editor/components/CodeEditor";
+import { summarizeLineChanges } from "../../editor/codemirror/extensions";
 import { formatFileError } from "../../../services/tauri/filesystem";
-import { getDirtyPathState, selectActiveTab } from "../store/selectors";
+import { formatClock } from "../../../shared/utils/time";
+import { getTreePathState, selectActiveTab } from "../store/selectors";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { EditorWorkspace } from "./EditorWorkspace";
+import { ExternalChangeCard } from "./ExternalChangeCard";
 import { StatusBar } from "./StatusBar";
 import { TitleBar } from "./TitleBar";
 import type { ConfirmState, ToastState } from "./viewTypes";
@@ -14,6 +17,8 @@ import { WorkspaceSidebar } from "./WorkspaceSidebar";
 export function WorkspaceShell() {
   const project = useWorkspaceStore((state) => state.project);
   const tree = useWorkspaceStore((state) => state.tree);
+  const treeChanges = useWorkspaceStore((state) => state.treeChanges);
+  const externalChangeSummary = useWorkspaceStore((state) => state.externalChangeSummary);
   const ignoredPatterns = useWorkspaceStore((state) => state.ignoredPatterns);
   const expandedDirs = useWorkspaceStore((state) => state.expandedDirs);
   const tabs = useWorkspaceStore((state) => state.tabs);
@@ -36,7 +41,10 @@ export function WorkspaceShell() {
   const updateTabCursor = useWorkspaceStore((state) => state.updateTabCursor);
   const updateTabScroll = useWorkspaceStore((state) => state.updateTabScroll);
   const saveFile = useWorkspaceStore((state) => state.saveFile);
-  const restoreFile = useWorkspaceStore((state) => state.restoreFile);
+  const dismissDiskNotice = useWorkspaceStore((state) => state.dismissDiskNotice);
+  const dismissExternalChangeSummary = useWorkspaceStore(
+    (state) => state.dismissExternalChangeSummary,
+  );
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const resizeSidebar = useWorkspaceStore((state) => state.resizeSidebar);
   const openFind = useWorkspaceStore((state) => state.openFind);
@@ -52,7 +60,14 @@ export function WorkspaceShell() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
-  const dirtyPaths = useMemo(() => getDirtyPathState(tabs), [tabs]);
+  const treePaths = useMemo(() => getTreePathState(tabs), [tabs]);
+  const lineChanges = useMemo(
+    () =>
+      activeTab && !activeTab.binary && !activeTab.missing
+        ? summarizeLineChanges(activeTab.diskContent, activeTab.content)
+        : { added: 0, modified: 0, deleted: 0 },
+    [activeTab],
+  );
 
   const showToast = useCallback(
     (message: string, tone: ToastState["tone"] = "neutral", detail?: string) => {
@@ -71,7 +86,7 @@ export function WorkspaceShell() {
 
   useEffect(() => {
     const query = findState.query;
-    if (!activeTab || !query) {
+    if (!activeTab || activeTab.binary || !query) {
       setFindMatch(0, 0);
       return;
     }
@@ -242,7 +257,7 @@ export function WorkspaceShell() {
         toggleSidebar();
       } else if (modifier && event.key.toLowerCase() === "f") {
         event.preventDefault();
-        if (activeTab) openFind();
+        if (activeTab && !activeTab.binary) openFind();
       } else if (modifier && event.key.toLowerCase() === "s") {
         event.preventDefault();
         handleSave();
@@ -287,14 +302,17 @@ export function WorkspaceShell() {
     [resizeSidebar, sidebarWidth],
   );
 
+  const needsExternalAttention = tabs.some((tab) => tab.externalConflict || tab.missing);
   const statusText =
     syncState.status === "reading"
       ? "读取中"
       : syncState.status === "failed"
         ? "同步失败"
-        : project
-          ? "已同步"
-          : "未打开项目";
+        : needsExternalAttention
+          ? "有变更待处理"
+          : project
+            ? `已同步 ${formatClock(project.syncedAt)}`
+            : "未打开项目";
   const lineSelection = activeTab ? Math.abs(activeTab.cursor.head - activeTab.cursor.anchor) : 0;
 
   return (
@@ -329,10 +347,13 @@ export function WorkspaceShell() {
                 ignoredPatterns={ignoredPatterns}
                 expandedDirs={expandedDirs}
                 activePath={activePath}
-                dirtyFiles={dirtyPaths.files}
-                dirtyDirectories={dirtyPaths.directories}
+                openedFiles={treePaths.openedFiles}
+                dirtyFiles={treePaths.dirtyFiles}
+                conflictFiles={treePaths.conflictFiles}
+                treeChanges={treeChanges}
                 sidebarWidth={sidebarWidth}
                 syncStatus={syncState.status}
+                externalAttention={needsExternalAttention}
                 statusText={statusText}
                 onOpenFile={handleOpenFile}
                 onToggleDirectory={toggleDirectory}
@@ -345,6 +366,8 @@ export function WorkspaceShell() {
               tabs={tabs}
               activePath={activePath}
               previewPath={previewPath}
+              previewRevision={project.syncedAt}
+              treeChanges={treeChanges}
               activeTab={activeTab}
               findState={findState}
               editorRef={editorRef}
@@ -356,7 +379,7 @@ export function WorkspaceShell() {
               onSetFindQuery={setFindQuery}
               onSetFindCaseSensitive={setFindCaseSensitive}
               onFindMove={handleFindMove}
-              onRestoreFile={restoreFile}
+              onDismissDiskNotice={dismissDiskNotice}
               onUpdateContent={updateTabContent}
               onUpdateCursor={updateTabCursor}
               onUpdateScroll={updateTabScroll}
@@ -369,8 +392,18 @@ export function WorkspaceShell() {
           activeTab={activeTab}
           syncState={syncState}
           lineSelection={lineSelection}
+          lineChanges={lineChanges}
           onOpenFind={openFind}
         />
+
+        {externalChangeSummary && project ? (
+          <ExternalChangeCard
+            summary={externalChangeSummary}
+            projectPath={project.path}
+            tabs={tabs}
+            onClose={dismissExternalChangeSummary}
+          />
+        ) : null}
 
         {toast ? (
           <div

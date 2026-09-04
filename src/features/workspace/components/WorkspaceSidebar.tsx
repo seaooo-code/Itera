@@ -2,6 +2,7 @@ import type { PointerEvent } from "react";
 import { Button } from "react-aria-components";
 import type { FileTreeNode } from "../../../services/tauri/filesystem";
 import { Icon } from "../../../shared/components/Icon";
+import type { TreeChangeKind } from "../store/types";
 import { FileTree } from "./FileTree";
 
 interface WorkspaceSidebarProps {
@@ -9,10 +10,13 @@ interface WorkspaceSidebarProps {
   ignoredPatterns: string[];
   expandedDirs: Record<string, boolean>;
   activePath: string | null;
+  openedFiles: ReadonlySet<string>;
   dirtyFiles: ReadonlySet<string>;
-  dirtyDirectories: ReadonlySet<string>;
+  conflictFiles: ReadonlySet<string>;
+  treeChanges: Record<string, TreeChangeKind>;
   sidebarWidth: number;
   syncStatus: "idle" | "reading" | "synced" | "failed";
+  externalAttention: boolean;
   statusText: string;
   onOpenFile: (path: string, options?: { preview?: boolean }) => void;
   onToggleDirectory: (path: string) => void;
@@ -26,10 +30,13 @@ export function WorkspaceSidebar({
   ignoredPatterns,
   expandedDirs,
   activePath,
+  openedFiles,
   dirtyFiles,
-  dirtyDirectories,
+  conflictFiles,
+  treeChanges,
   sidebarWidth,
   syncStatus,
+  externalAttention,
   statusText,
   onOpenFile,
   onToggleDirectory,
@@ -50,7 +57,7 @@ export function WorkspaceSidebar({
           </span>
           <span className="flex items-center gap-1 font-mono text-[10.5px] text-[var(--itera-color-subtle)]">
             <i
-              className={`h-[5px] w-[5px] rounded-full ${syncStatus === "failed" ? "bg-[var(--itera-color-danger)]" : syncStatus === "reading" ? "bg-[var(--itera-color-warning)]" : "bg-[var(--itera-color-muted)]"}`}
+              className={`h-[5px] w-[5px] rounded-full ${syncStatus === "failed" ? "bg-[var(--itera-color-danger)]" : syncStatus === "reading" || externalAttention ? "bg-[var(--itera-color-warning-marker)]" : "bg-[var(--itera-color-muted)]"}`}
             />
             {statusText}
           </span>
@@ -69,8 +76,10 @@ export function WorkspaceSidebar({
           nodes={tree}
           expandedDirs={expandedDirs}
           activePath={activePath}
+          openedFiles={openedFiles}
           dirtyFiles={dirtyFiles}
-          dirtyDirectories={dirtyDirectories}
+          conflictFiles={conflictFiles}
+          treeChanges={treeChanges}
           onOpenFile={onOpenFile}
           onToggleDirectory={onToggleDirectory}
         />
@@ -79,10 +88,19 @@ export function WorkspaceSidebar({
             className="m-0 shrink-0 cursor-default overflow-hidden text-ellipsis whitespace-nowrap px-3 pb-2.5 pt-[9px] font-mono text-[11px] text-[var(--itera-color-muted)]"
             title={`已忽略 ${ignoredPatterns.join(" · ")} 等 ${ignoredPatterns.length} 项`}
           >
-            已忽略隐藏与依赖目录{" "}
-            <b className="font-semibold text-[var(--itera-color-muted)]">
-              · {ignoredPatterns.length} 项
-            </b>
+            已忽略 <b className="font-semibold">{ignoredPatterns.length} 项</b> ·{" "}
+            <button
+              type="button"
+              className="rounded-[5px] border-0 bg-transparent p-0 font-mono text-[11px] text-inherit underline underline-offset-2 outline-none hover:bg-[var(--itera-color-surface)] hover:text-[var(--itera-color-ink)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)]"
+              onClick={() => {
+                const gitignore = tree.find(
+                  (node) => node.type === "file" && node.name === ".gitignore",
+                );
+                if (gitignore) onOpenFile(gitignore.path, { preview: true });
+              }}
+            >
+              .gitignore
+            </button>
           </p>
         ) : null}
       </aside>
@@ -96,8 +114,8 @@ export function WorkspaceSidebar({
         tabIndex={0}
         onPointerDown={onResizeStart}
         onKeyDown={(event) => {
-          if (event.key === "ArrowLeft") onResize(sidebarWidth - 12);
-          if (event.key === "ArrowRight") onResize(sidebarWidth + 12);
+          if (event.key === "ArrowLeft") onResize(sidebarWidth - 16);
+          if (event.key === "ArrowRight") onResize(sidebarWidth + 16);
         }}
       />
     </>

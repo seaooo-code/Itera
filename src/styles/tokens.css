@@ -40,9 +40,10 @@
     var(--itera-color-danger) 32%,
     var(--itera-color-border)
   );
-  --itera-color-change-added: var(--itera-color-primary-solid);
-  --itera-color-change-modified: var(--itera-color-warning);
-  --itera-color-change-deleted: var(--itera-color-danger);
+  --itera-color-change-added: oklch(58% 0.14 142);
+  --itera-color-change-added-ink: oklch(45% 0.13 142);
+  --itera-color-change-modified: oklch(46% 0.16 262);
+  --itera-color-change-deleted: oklch(52% 0.19 25);
   --itera-color-syntax-keyword: oklch(34% 0.15 300);
   --itera-color-syntax-tag: oklch(36.5% 0.13 335);
   --itera-color-syntax-function: oklch(39% 0.125 262);

@@ -10,15 +10,23 @@ import {
   writeProjectFile,
 } from "../../../services/tauri/filesystem";
 import { watchProject } from "../../../services/tauri/watcher";
-import type { CursorState, TabState, WorkspaceStore } from "./types";
+import type {
+  CursorState,
+  ExternalChangeSummary,
+  TabState,
+  TreeChangeKind,
+  WorkspaceStore,
+} from "./types";
 
 export type {
   CursorState,
+  ExternalChangeSummary,
   FindState,
   ProjectState,
   RecentProject,
   SyncState,
   TabState,
+  TreeChangeKind,
   WorkspaceActions,
   WorkspaceState,
   WorkspaceStore,
@@ -26,6 +34,63 @@ export type {
 
 let stopWatching: (() => void) | null = null;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+let treeChangeTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingModifiedPaths = new Set<string>();
+let ignoredWatchPaths = new Map<string, number>();
+
+function watchEventKind(event: Parameters<Parameters<typeof watchProject>[1]>[0]) {
+  if (event.type === "any") return "modified" as const;
+  if (event.type === "other") return "structural" as const;
+  if ("access" in event.type) return "ignored" as const;
+  if ("create" in event.type || "remove" in event.type) return "structural" as const;
+  if (event.type.modify.kind === "metadata") return "ignored" as const;
+  if (event.type.modify.kind === "rename") return "structural" as const;
+  return "modified" as const;
+}
+
+function shouldIgnoreWatchPath(path: string) {
+  const expiresAt = ignoredWatchPaths.get(path);
+  if (!expiresAt) return false;
+  if (expiresAt > Date.now()) return true;
+  ignoredWatchPaths.delete(path);
+  return false;
+}
+
+function collectFilePaths(nodes: WorkspaceStore["tree"]) {
+  const paths = new Set<string>();
+
+  const visit = (items: WorkspaceStore["tree"]) => {
+    for (const item of items) {
+      if (item.type === "file") {
+        paths.add(item.path);
+      } else {
+        visit(item.children ?? []);
+      }
+    }
+  };
+
+  visit(nodes);
+  return paths;
+}
+
+function clearTreeChangeTimer() {
+  if (!treeChangeTimer) return;
+  clearTimeout(treeChangeTimer);
+  treeChangeTimer = null;
+}
+
+function scheduleTreeChangeClear() {
+  clearTreeChangeTimer();
+  treeChangeTimer = setTimeout(() => {
+    const state = useWorkspaceStore.getState();
+    const needsAttention = state.tabs.some((tab) => tab.externalConflict || tab.missing);
+    useWorkspaceStore.setState({
+      treeChanges: {},
+      externalChangeSummary: needsAttention ? state.externalChangeSummary : null,
+    });
+    treeChangeTimer = null;
+  }, 5000);
+}
 
 function clampSidebar(width: number) {
   return Math.min(460, Math.max(196, Math.round(width)));
@@ -62,6 +127,7 @@ function createTab(
     byteLength: file.byteLength,
     externalConflict: draft?.externalConflict ?? false,
     missing: false,
+    diskNoticeDismissed: draft?.diskNoticeDismissed ?? false,
   };
 }
 
@@ -73,7 +139,13 @@ async function loadPersistedTabs(rootPath: string, drafts: TabState[]): Promise<
       const file = await readProjectFile(draft.path);
       loaded.push(createTab(rootPath, file, draft));
     } catch {
-      loaded.push({ ...draft, missing: true });
+      loaded.push({
+        ...draft,
+        dirty: true,
+        missing: true,
+        externalConflict: false,
+        diskNoticeDismissed: draft.diskNoticeDismissed ?? false,
+      });
     }
   }
 
@@ -82,7 +154,16 @@ async function loadPersistedTabs(rootPath: string, drafts: TabState[]): Promise<
 
 async function startWatching(rootPath: string) {
   stopWatching?.();
-  stopWatching = await watchProject(rootPath, () => {
+  pendingModifiedPaths = new Set<string>();
+  ignoredWatchPaths = new Map<string, number>();
+  stopWatching = await watchProject(rootPath, (event) => {
+    const kind = watchEventKind(event);
+    if (kind === "ignored") return;
+    if (kind === "modified") {
+      for (const path of event.paths) {
+        if (!shouldIgnoreWatchPath(path)) pendingModifiedPaths.add(path);
+      }
+    }
     if (refreshTimer) clearTimeout(refreshTimer);
     refreshTimer = setTimeout(() => {
       void useWorkspaceStore.getState().refreshWorkspace();
@@ -95,6 +176,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
     (set, get) => ({
       project: null,
       tree: [],
+      treeChanges: {},
+      externalChangeSummary: null,
       ignoredPatterns: [],
       expandedDirs: {},
       tabs: [],
@@ -123,6 +206,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       openProject: async (path, restoreTabs = false) => {
         const existingProject = get().project;
         const persistedTabs = restoreTabs ? get().tabs : [];
+        clearTreeChangeTimer();
         set({ syncState: { status: "reading", error: null } });
 
         try {
@@ -148,6 +232,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
               syncedAt: Date.now(),
             },
             tree: project.children,
+            treeChanges: {},
+            externalChangeSummary: null,
             ignoredPatterns: project.ignoredPatterns,
             tabs,
             activePath: tabs.some((tab) => tab.path === get().activePath)
@@ -175,9 +261,12 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       closeProject: () => {
         stopWatching?.();
         stopWatching = null;
+        clearTreeChangeTimer();
         set({
           project: null,
           tree: [],
+          treeChanges: {},
+          externalChangeSummary: null,
           ignoredPatterns: [],
           tabs: [],
           activePath: null,
@@ -200,12 +289,37 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         set({ syncState: { status: "reading", error: null } });
 
         try {
+          const previousFilePaths = collectFilePaths(get().tree);
           const nextProject = await readProjectTree(project.path);
+          const nextFilePaths = collectFilePaths(nextProject.children);
+          const treeChanges: Record<string, TreeChangeKind> = { ...get().treeChanges };
+          const added = new Set<string>();
+          const modified = new Set<string>();
+          const deleted = new Set<string>();
+
+          for (const path of nextFilePaths) {
+            if (!previousFilePaths.has(path) && !shouldIgnoreWatchPath(path)) {
+              added.add(path);
+              treeChanges[path] = "added";
+            }
+          }
+          for (const path of previousFilePaths) {
+            if (!nextFilePaths.has(path)) deleted.add(path);
+          }
+          for (const path of pendingModifiedPaths) {
+            if (nextFilePaths.has(path) && !added.has(path)) {
+              modified.add(path);
+              treeChanges[path] = "reloaded";
+            }
+          }
+          pendingModifiedPaths = new Set<string>();
+
           const nextTabs = await Promise.all(
             get().tabs.map(async (tab) => {
               try {
                 const file = await readProjectFile(tab.path);
                 if (tab.dirty) {
+                  if (file.content !== tab.diskContent) modified.add(tab.path);
                   return {
                     ...tab,
                     diskContent: file.content,
@@ -213,7 +327,14 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                     binary: file.binary,
                     externalConflict: file.content !== tab.diskContent || tab.externalConflict,
                     missing: false,
+                    diskNoticeDismissed:
+                      file.content !== tab.diskContent ? false : tab.diskNoticeDismissed,
                   };
+                }
+
+                if (file.content !== tab.diskContent) {
+                  modified.add(tab.path);
+                  treeChanges[tab.path] = "reloaded";
                 }
 
                 return createTab(project.path, file, {
@@ -222,18 +343,37 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                   dirty: false,
                 });
               } catch {
-                return { ...tab, missing: true };
+                return {
+                  ...tab,
+                  dirty: true,
+                  missing: true,
+                  externalConflict: false,
+                  diskNoticeDismissed: tab.missing ? tab.diskNoticeDismissed : false,
+                };
               }
             }),
           );
 
+          const hasNewTreeChanges = added.size + modified.size + deleted.size > 0;
+          const externalChangeSummary: ExternalChangeSummary | null = hasNewTreeChanges
+            ? {
+                occurredAt: Date.now(),
+                added: [...added],
+                modified: [...modified],
+                deleted: [...deleted],
+              }
+            : get().externalChangeSummary;
+
           set({
             tree: nextProject.children,
+            treeChanges,
+            externalChangeSummary,
             ignoredPatterns: nextProject.ignoredPatterns,
             tabs: nextTabs,
             project: { ...project, syncedAt: Date.now() },
             syncState: { status: "synced", error: null },
           });
+          if (hasNewTreeChanges) scheduleTreeChangeClear();
         } catch (error) {
           const message = formatFileError(error, "刷新项目失败");
           console.error("[Itera] 刷新项目失败", { path: project.path, error });
@@ -311,7 +451,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       updateTabContent: (path, content) =>
         set((state) => {
           const tab = state.tabs.find((item) => item.path === path);
-          const dirty = tab ? content !== tab.diskContent : false;
+          const dirty = tab ? tab.missing || content !== tab.diskContent : false;
 
           return {
             tabs: state.tabs.map((item) =>
@@ -336,6 +476,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         if (!tab || tab.readOnly || !tab.dirty) return;
 
         try {
+          ignoredWatchPaths.set(tab.path, Date.now() + 2000);
           await writeProjectFile(tab.path, tab.content);
           set((state) => ({
             tabs: state.tabs.map((item) =>
@@ -346,6 +487,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                     dirty: false,
                     externalConflict: false,
                     missing: false,
+                    diskNoticeDismissed: false,
                   }
                 : item,
             ),
@@ -371,11 +513,23 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
                   dirty: false,
                   externalConflict: false,
                   missing: false,
+                  diskNoticeDismissed: false,
                 }
               : tab,
           ),
         }));
       },
+
+      dismissDiskNotice: (path = get().activePath ?? undefined) => {
+        if (!path) return;
+        set((state) => ({
+          tabs: state.tabs.map((tab) =>
+            tab.path === path ? { ...tab, diskNoticeDismissed: true } : tab,
+          ),
+        }));
+      },
+
+      dismissExternalChangeSummary: () => set({ externalChangeSummary: null }),
 
       toggleSidebar: () => {
         set((state) => ({ sidebarVisible: !state.sidebarVisible }));
@@ -446,6 +600,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           set({
             project: null,
             tree: [],
+            treeChanges: {},
+            externalChangeSummary: null,
             ignoredPatterns: [],
             tabs: [],
             activePath: null,

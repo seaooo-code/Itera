@@ -13,22 +13,22 @@ function RecentProjectRow({
 }) {
   return (
     <Button
-      className="group flex w-full items-center gap-3 rounded-[8px] border border-transparent px-3 py-2 text-left outline-none transition hover:border-[var(--itera-color-border-soft)] hover:bg-[var(--itera-color-sunken)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed disabled:opacity-50"
+      className="group flex w-full items-center gap-3 rounded-[8px] border-0 bg-transparent px-2.5 py-[9px] text-left outline-none transition hover:bg-[var(--itera-color-surface)] hover:shadow-[0_1px_3px_color-mix(in_oklch,var(--itera-color-ink)_10%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed"
       isDisabled={!item.available}
       onPress={() => onOpen(item.path)}
     >
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[7px] bg-[var(--itera-color-primary-soft)] text-[var(--itera-color-primary-solid)]">
-        <Icon name="folder" className="h-4 w-4" />
+      <span className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-[7px] border border-[var(--itera-color-border)] bg-[var(--itera-color-sunken-strong)] text-[var(--itera-color-muted)]">
+        <Icon name="folder" className="h-3.5 w-3.5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[13px] font-medium text-[var(--itera-color-ink)]">
+        <span className="block truncate text-[13px] font-medium leading-[1.45] text-[var(--itera-color-ink)]">
           {item.name}
         </span>
-        <span className="block truncate font-mono text-[11px] text-[var(--itera-color-subtle)]">
+        <span className="block truncate font-mono text-[11px] leading-[1.45] text-[var(--itera-color-muted)]">
           {shortPath(item.path)}
         </span>
       </span>
-      <span className="shrink-0 font-mono text-[10.5px] text-[var(--itera-color-faint)]">
+      <span className="shrink-0 font-mono text-[11px] text-[var(--itera-color-muted)]">
         {item.available ? formatRelativeTime(item.openedAt) : "不可用"}
       </span>
     </Button>
@@ -47,47 +47,43 @@ export function Welcome({ recentProjects, onChooseProject, onOpenRecent }: Welco
       className="grid min-h-0 place-items-center overflow-auto px-8 py-12"
       aria-labelledby="welcome-title"
     >
-      <div className="w-full max-w-[520px]">
-        <div className="mb-10 text-center">
-          <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-[14px] bg-[var(--itera-color-ink)] text-[var(--itera-color-surface)] shadow-[var(--itera-shadow-brand)]">
-            <Icon name="code" className="h-7 w-7" />
+      <div className="w-full max-w-[600px] py-10">
+        <div>
+          <div className="grid h-10 w-10 place-items-center rounded-[11px] bg-[var(--itera-color-ink)] text-[var(--itera-color-surface)]">
+            <Icon name="code" className="h-[22px] w-[22px]" />
           </div>
           <h1
             id="welcome-title"
-            className="m-0 text-[26px] font-semibold leading-[1.35] tracking-normal text-[var(--itera-color-ink)]"
+            className="mb-0 mt-5 text-[26px] font-semibold leading-[1.35] tracking-normal text-[var(--itera-color-ink)]"
           >
-            打开一个本地项目，开始写代码
+            打开一个本地项目，开始写代码。
           </h1>
-          <p className="mt-3 text-[13px] text-[var(--itera-color-muted)]">
-            选择一个目录，砚 Yan 会读取文件并保留你的本地编辑草稿。
+          <p className="mb-0 mt-[9px] max-w-[42ch] text-[13.5px] leading-[1.7] text-[var(--itera-color-muted)]">
+            砚 Yan 第一版只做四件事：打开本地项目、浏览文件、编辑 JavaScript /
+            TypeScript、保存。没有别的。
           </p>
-          <Button
-            className="mt-6 inline-flex h-9 items-center gap-2 rounded-[7px] border border-[var(--itera-color-primary-solid)] bg-[var(--itera-color-primary-solid)] px-4 text-[12.5px] font-medium text-[var(--itera-color-surface)] shadow-[var(--itera-shadow-primary)] outline-none transition hover:bg-[var(--itera-color-primary-dark)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-offset-2"
-            onPress={onChooseProject}
-          >
-            <Icon name="folder" className="h-4 w-4" />
-            选择项目目录
-            <span className="ml-1 font-mono text-[10.5px] opacity-80">⌘O</span>
-          </Button>
+          <div className="mt-6 flex items-center gap-3">
+            <Button
+              className="inline-flex h-9 items-center gap-[7px] rounded-[7px] border border-[var(--itera-color-primary-solid)] bg-[var(--itera-color-primary-solid)] px-[17px] text-[13.5px] font-medium text-[var(--itera-color-surface)] outline-none transition hover:bg-[var(--itera-color-primary-dark)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-offset-2"
+              onPress={onChooseProject}
+            >
+              <Icon name="folder" className="h-3.5 w-3.5" />
+              选择项目目录…
+            </Button>
+            <span className="font-mono text-[11px] text-[var(--itera-color-muted)]">或按 ⌘O</span>
+          </div>
         </div>
 
-        <div className="rounded-[12px] border border-[var(--itera-color-border-soft)] bg-[var(--itera-color-surface)] p-3 shadow-[var(--itera-shadow-welcome)]">
-          <div className="flex items-center justify-between px-3 pb-2 pt-1">
-            <h2 className="m-0 font-mono text-[10.5px] font-medium tracking-[0.1em] text-[var(--itera-color-muted)] uppercase">
-              最近打开
-            </h2>
-            <span className="font-mono text-[10.5px] text-[var(--itera-color-faint)]">
-              {recentProjects.length} / 8
-            </span>
-          </div>
+        <div className="mt-10">
+          <h2 className="mb-2 mt-0 font-mono text-[10.5px] font-medium tracking-[0.1em] text-[var(--itera-color-muted)] uppercase">
+            最近打开
+          </h2>
           {recentProjects.length ? (
             recentProjects.map((item) => (
               <RecentProjectRow key={item.path} item={item} onOpen={onOpenRecent} />
             ))
           ) : (
-            <p className="px-3 py-5 text-center text-[12px] text-[var(--itera-color-faint)]">
-              还没有最近项目
-            </p>
+            <p className="py-5 text-[12px] text-[var(--itera-color-faint)]">还没有最近项目</p>
           )}
         </div>
       </div>

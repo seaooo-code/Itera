@@ -235,6 +235,13 @@ export async function readProjectFile(path: string): Promise<ReadFileResult> {
   };
 }
 
+export async function readProjectFileBuffer(path: string): Promise<ArrayBuffer> {
+  assertTauriRuntime("本地文件能力需要在 Tauri 桌面环境中使用。");
+
+  const bytes = await readFile(path);
+  return new Uint8Array(bytes).buffer;
+}
+
 export async function writeProjectFile(path: string, content: string) {
   assertTauriRuntime("本地文件能力需要在 Tauri 桌面环境中使用。");
 

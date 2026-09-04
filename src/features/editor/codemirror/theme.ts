@@ -50,7 +50,13 @@ export const editorLayoutTheme = EditorView.theme({
     textAlign: "right",
   },
   ".cm-activeLine": {
+    position: "relative",
     backgroundColor: "var(--itera-color-current-line)",
+    boxShadow: "inset 2px 0 0 var(--itera-color-primary-border)",
+  },
+  ".cm-activeLineGutter": {
+    color: "var(--itera-color-ink)",
+    backgroundColor: "var(--itera-color-surface)",
   },
   ".cm-selectionBackground, ::selection": {
     backgroundColor: "var(--itera-color-selection) !important",

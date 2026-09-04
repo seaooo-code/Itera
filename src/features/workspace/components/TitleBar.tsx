@@ -196,7 +196,7 @@ export function TitleBar({
           <>
             <span
               aria-hidden="true"
-              className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--itera-color-warning)]"
+              className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--itera-color-warning-marker)]"
             />
             <span className="sr-only">未保存</span>
           </>
@@ -209,7 +209,7 @@ export function TitleBar({
         className="flex min-w-0 items-center justify-end gap-1"
       >
         <Button
-          className="flex h-7 items-center gap-1.5 rounded-[7px] border border-transparent px-2 text-[12px] text-[var(--itera-color-muted)] outline-none hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed disabled:opacity-45"
+          className="flex h-7 items-center gap-2 rounded-[7px] border border-[var(--itera-color-warning-border)] bg-[var(--itera-color-warning-soft)] px-[9px] text-[12.5px] font-medium text-[var(--itera-color-warning)] outline-none hover:border-[var(--itera-color-warning-marker)] hover:bg-[var(--itera-color-warning-hover-soft)] hover:text-[var(--itera-color-warning-hover)] active:bg-[var(--itera-color-warning-press-soft)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-transparent disabled:text-[color-mix(in_oklch,var(--itera-color-muted)_62%,var(--itera-color-sunken))]"
           isDisabled={!activeTab || activeTab.readOnly || !activeTab.dirty}
           aria-label="保存当前文件（⌘S）"
           onPress={onSave}

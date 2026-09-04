@@ -32,7 +32,7 @@ export function FindBar({
       : `${totalMatches ? currentMatch + 1 : 0} / ${totalMatches}`;
 
   return (
-    <div className="absolute right-4 top-2 z-20 flex items-center gap-1.5 rounded-[9px] border border-[var(--itera-color-border)] bg-[var(--itera-color-surface)] p-1.5 shadow-[var(--itera-shadow-find)]">
+    <div className="absolute right-[18px] top-2.5 z-20 flex items-center gap-1.5 rounded-[9px] border border-[var(--itera-color-border)] bg-[var(--itera-color-surface)] px-[7px] py-1.5 shadow-[var(--itera-shadow-find)]">
       <SearchField
         aria-label="文件内查找"
         value={query}
@@ -42,8 +42,8 @@ export function FindBar({
         <Label className="sr-only">查找</Label>
         <Input
           autoFocus
-          className="h-[26px] w-[186px] rounded-[6px] border border-[var(--itera-color-border)] bg-[var(--itera-color-surface)] px-2 text-[12.5px] text-[var(--itera-color-ink)] outline-none placeholder:text-[var(--itera-color-faint)] focus:border-[var(--itera-color-primary-solid)] focus:ring-2 focus:ring-[var(--itera-color-primary-border)]"
-          placeholder="查找文件内容…"
+          className="h-[26px] w-[186px] rounded-[6px] border border-[var(--itera-color-border)] bg-[var(--itera-color-surface)] px-[9px] text-[12.5px] text-[var(--itera-color-ink)] outline-none placeholder:text-[var(--itera-color-faint)] hover:border-[color-mix(in_oklch,var(--itera-color-ink)_30%,var(--itera-color-border))] focus:border-[var(--itera-color-primary-solid)] focus:ring-[3px] focus:ring-[var(--itera-color-primary-ring-halo)]"
+          placeholder="在文件内查找"
         />
       </SearchField>
       <span
