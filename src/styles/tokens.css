@@ -24,6 +24,7 @@
   --itera-color-selection: oklch(91.8% 0.045 184);
   --itera-color-primary-ring-halo: oklch(76% 0.075 184 / 0.45);
   --itera-color-warning: oklch(45% 0.092 72);
+  --itera-color-warning-marker: oklch(58% 0.12 72);
   --itera-color-warning-hover: oklch(38% 0.078 72);
   --itera-color-warning-soft: oklch(96.5% 0.024 72);
   --itera-color-warning-hover-soft: oklch(93% 0.05 72);
@@ -33,11 +34,15 @@
   --itera-color-warning-find-current: oklch(88.5% 0.09 72);
   --itera-color-danger: oklch(45% 0.17 25);
   --itera-color-danger-soft: oklch(96.5% 0.026 25);
+  --itera-color-danger-hover-soft: oklch(93.5% 0.03 25);
   --itera-color-danger-border: color-mix(
     in oklch,
     var(--itera-color-danger) 32%,
     var(--itera-color-border)
   );
+  --itera-color-change-added: var(--itera-color-primary-solid);
+  --itera-color-change-modified: var(--itera-color-warning);
+  --itera-color-change-deleted: var(--itera-color-danger);
   --itera-color-syntax-keyword: oklch(34% 0.15 300);
   --itera-color-syntax-tag: oklch(36.5% 0.13 335);
   --itera-color-syntax-function: oklch(39% 0.125 262);

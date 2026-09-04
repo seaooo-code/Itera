@@ -21,6 +21,8 @@ interface FileTreeProps {
   nodes: FileTreeNode[];
   expandedDirs: Record<string, boolean>;
   activePath: string | null;
+  dirtyFiles: ReadonlySet<string>;
+  dirtyDirectories: ReadonlySet<string>;
   onOpenFile: (path: string, options?: { preview?: boolean }) => void;
   onToggleDirectory: (path: string) => void;
 }
@@ -29,6 +31,8 @@ export function FileTree({
   nodes,
   expandedDirs,
   activePath,
+  dirtyFiles,
+  dirtyDirectories,
   onOpenFile,
   onToggleDirectory,
 }: FileTreeProps) {
@@ -73,45 +77,61 @@ export function FileTree({
   );
 
   const renderNodes = (items: FileTreeNode[], level: number) =>
-    items.map((node) => (
-      <div key={node.path}>
-        <button
-          type="button"
-          role="treeitem"
-          data-tree-path={node.path}
-          aria-level={level}
-          aria-expanded={node.type === "directory" ? Boolean(expandedDirs[node.path]) : undefined}
-          aria-selected={node.type === "file" ? activePath === node.path : undefined}
-          className={`group flex h-[26px] w-full items-center gap-1.5 rounded-[5px] border-0 bg-transparent pr-2 text-left text-[12.5px] outline-none transition-colors hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${activePath === node.path ? "bg-[var(--itera-color-primary-soft)] font-medium" : ""}`}
-          style={{ paddingLeft: `${8 + (level - 1) * 14}px` }}
-          onClick={() =>
-            node.type === "directory"
-              ? onToggleDirectory(node.path)
-              : onOpenFile(node.path, { preview: true })
-          }
-          onDoubleClick={() => {
-            if (node.type === "file") onOpenFile(node.path, { preview: false });
-          }}
-          onKeyDown={(event) => onTreeKeyDown(event, node)}
-        >
-          <span className="flex h-3 w-3 shrink-0 items-center justify-center text-[var(--itera-color-muted)]">
-            {node.type === "directory" ? (
-              <Icon
-                name={expandedDirs[node.path] ? "chevron-down" : "chevron-right"}
-                className="h-3 w-3"
-              />
+    items.map((node) => {
+      const isDirtyFile = node.type === "file" && dirtyFiles.has(node.path);
+      const containsDirtyFile = node.type === "directory" && dirtyDirectories.has(node.path);
+
+      return (
+        <div key={node.path}>
+          <button
+            type="button"
+            role="treeitem"
+            data-tree-path={node.path}
+            aria-level={level}
+            aria-expanded={node.type === "directory" ? Boolean(expandedDirs[node.path]) : undefined}
+            aria-selected={node.type === "file" ? activePath === node.path : undefined}
+            className={`group flex h-[26px] w-full items-center gap-1.5 rounded-[5px] border-0 bg-transparent pr-2 text-left text-[12.5px] outline-none transition-colors hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${activePath === node.path ? "bg-[var(--itera-color-primary-soft)] font-medium" : ""}`}
+            style={{ paddingLeft: `${8 + (level - 1) * 14}px` }}
+            onClick={() =>
+              node.type === "directory"
+                ? onToggleDirectory(node.path)
+                : onOpenFile(node.path, { preview: true })
+            }
+            onDoubleClick={() => {
+              if (node.type === "file") onOpenFile(node.path, { preview: false });
+            }}
+            onKeyDown={(event) => onTreeKeyDown(event, node)}
+          >
+            <span className="flex h-3 w-3 shrink-0 items-center justify-center text-[var(--itera-color-muted)]">
+              {node.type === "directory" ? (
+                <Icon
+                  name={expandedDirs[node.path] ? "chevron-down" : "chevron-right"}
+                  className="h-3 w-3"
+                />
+              ) : null}
+            </span>
+            <FileIcon node={node} />
+            <span className="min-w-0 flex-1 truncate">{node.name}</span>
+            {isDirtyFile || containsDirtyFile ? (
+              <span className="grid h-4 w-4 shrink-0 place-items-center">
+                <span
+                  aria-hidden="true"
+                  className={`rounded-full bg-[var(--itera-color-warning)] ${isDirtyFile ? "h-1.5 w-1.5" : "h-1 w-1 opacity-60"}`}
+                />
+                <span className="sr-only">
+                  {isDirtyFile ? "有未保存修改" : "包含有未保存修改的文件"}
+                </span>
+              </span>
             ) : null}
-          </span>
-          <FileIcon node={node} />
-          <span className="min-w-0 flex-1 truncate">{node.name}</span>
-        </button>
-        {node.type === "directory" && expandedDirs[node.path] && node.children?.length ? (
-          <fieldset className="m-0 min-w-0 border-0 p-0">
-            {renderNodes(node.children, level + 1)}
-          </fieldset>
-        ) : null}
-      </div>
-    ));
+          </button>
+          {node.type === "directory" && expandedDirs[node.path] && node.children?.length ? (
+            <fieldset className="m-0 min-w-0 border-0 p-0">
+              {renderNodes(node.children, level + 1)}
+            </fieldset>
+          ) : null}
+        </div>
+      );
+    });
 
   return (
     <div

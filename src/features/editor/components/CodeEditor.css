@@ -21,3 +21,45 @@
 .code-editor .cm-panels {
   display: none;
 }
+
+.code-editor .cm-changeGutter {
+  width: 6px;
+  min-width: 6px;
+}
+
+.code-editor .cm-changeGutter .cm-gutterElement {
+  position: relative;
+  width: 6px;
+  min-width: 6px;
+  padding: 0;
+}
+
+.code-editor .cm-change-added::before,
+.code-editor .cm-change-modified::before {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  content: "";
+}
+
+.code-editor .cm-change-added::before {
+  background: var(--itera-color-change-added);
+}
+
+.code-editor .cm-change-modified::before {
+  background: var(--itera-color-change-modified);
+}
+
+.code-editor .cm-change-deleted::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-top: 4px solid var(--itera-color-change-deleted);
+  border-right: 4px solid transparent;
+  content: "";
+}

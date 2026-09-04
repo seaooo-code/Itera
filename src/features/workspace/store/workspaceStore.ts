@@ -297,7 +297,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
           const nextActive =
             state.activePath !== path
               ? state.activePath
-              : (tabs[index]?.path ?? tabs[index - 1]?.path ?? null);
+              : (tabs[index - 1]?.path ?? tabs[index]?.path ?? null);
 
           return {
             tabs,

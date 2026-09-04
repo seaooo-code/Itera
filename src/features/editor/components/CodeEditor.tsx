@@ -3,10 +3,14 @@ import { indentWithTab } from "@codemirror/commands";
 import { SearchQuery, search, setSearchQuery } from "@codemirror/search";
 import { EditorState, Compartment } from "@codemirror/state";
 import { EditorView, keymap, placeholder as codeMirrorPlaceholder } from "@codemirror/view";
-import { basicSetup } from "codemirror";
 import type { FileLanguage } from "../../../services/tauri/filesystem";
 import type { CursorState } from "../../workspace/store/types";
-import { collectMatches, cursorFromView } from "../codemirror/extensions";
+import {
+  collectMatches,
+  cursorFromView,
+  editorSetup,
+  lineChangeExtension,
+} from "../codemirror/extensions";
 import { languageExtension } from "../codemirror/languages";
 import { editorLayoutTheme, syntaxTheme } from "../codemirror/theme";
 import "./CodeEditor.css";
@@ -22,6 +26,7 @@ export interface CodeEditorHandle {
 
 export interface CodeEditorProps {
   value: string;
+  originalValue: string;
   onChange: (value: string) => void;
   language: FileLanguage;
   readOnly?: boolean;
@@ -38,6 +43,7 @@ export interface CodeEditorProps {
 export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function CodeEditor(
   {
     value,
+    originalValue,
     onChange,
     language,
     readOnly = false,
@@ -56,6 +62,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
   const viewRef = useRef<EditorView>(null);
   const languageCompartment = useRef(new Compartment());
   const readOnlyCompartment = useRef(new Compartment());
+  const lineChangeCompartment = useRef(new Compartment());
   const onChangeRef = useRef(onChange);
   const onCursorChangeRef = useRef(onCursorChange);
   const onScrollChangeRef = useRef(onScrollChange);
@@ -63,10 +70,12 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
   const valueRef = useRef(value);
   const languageRef = useRef(language);
   const readOnlyRef = useRef(readOnly);
+  const originalValueRef = useRef(originalValue);
 
   valueRef.current = value;
   languageRef.current = language;
   readOnlyRef.current = readOnly;
+  originalValueRef.current = originalValue;
 
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -112,7 +121,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
       state: EditorState.create({
         doc: valueRef.current,
         extensions: [
-          basicSetup,
+          editorSetup,
           keymap.of([indentWithTab]),
           search({ top: true }),
           languageCompartment.current.of(languageExtension(languageRef.current)),
@@ -120,6 +129,7 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
             EditorState.readOnly.of(readOnlyRef.current),
             EditorView.editable.of(!readOnlyRef.current),
           ]),
+          lineChangeCompartment.current.of(lineChangeExtension(originalValueRef.current)),
           syntaxTheme,
           editorLayoutTheme,
           codeMirrorPlaceholder(placeholder),
@@ -175,6 +185,14 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
       ]),
     });
   }, [readOnly]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: lineChangeCompartment.current.reconfigure(lineChangeExtension(originalValue)),
+    });
+  }, [originalValue]);
 
   useEffect(() => {
     const view = viewRef.current;

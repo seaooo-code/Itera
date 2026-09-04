@@ -52,11 +52,6 @@ export const editorLayoutTheme = EditorView.theme({
   ".cm-activeLine": {
     backgroundColor: "var(--itera-color-current-line)",
   },
-  ".cm-activeLineGutter": {
-    backgroundColor: "var(--itera-color-current-line)",
-    color: "var(--itera-color-ink)",
-    boxShadow: "inset 2px 0 0 var(--itera-color-primary-border)",
-  },
   ".cm-selectionBackground, ::selection": {
     backgroundColor: "var(--itera-color-selection) !important",
   },

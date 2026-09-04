@@ -1,10 +1,74 @@
-import type { RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { Button, Tab, TabList, Tabs } from "react-aria-components";
 import { CodeEditor, type CodeEditorHandle } from "../../editor/components/CodeEditor";
+import { fileExtension } from "../../../shared/utils/path";
 import type { CursorState, FindState, TabState } from "../store/types";
 import { Icon } from "../../../shared/components/Icon";
-import { FileIcon } from "./FileIcon";
 import { FindBar } from "./FindBar";
+
+interface TabFileBadgeDefinition {
+  label: string;
+  tone: string;
+}
+
+function getTabFileBadge(name: string): TabFileBadgeDefinition {
+  const extension = fileExtension(name);
+
+  if (["ts", "tsx"].includes(extension)) {
+    return {
+      label: "TS",
+      tone: "border-[color-mix(in_oklch,var(--itera-color-icon-typescript)_30%,var(--itera-color-border))] text-[var(--itera-color-icon-typescript)]",
+    };
+  }
+
+  if (["js", "jsx", "mjs", "cjs"].includes(extension)) {
+    return {
+      label: "JS",
+      tone: "border-[color-mix(in_oklch,var(--itera-color-icon-javascript)_30%,var(--itera-color-border))] text-[var(--itera-color-icon-javascript)]",
+    };
+  }
+
+  if (["css", "scss", "sass", "less"].includes(extension)) {
+    return {
+      label: "CSS",
+      tone: "border-[color-mix(in_oklch,var(--itera-color-icon-markdown)_30%,var(--itera-color-border))] text-[var(--itera-color-icon-markdown)]",
+    };
+  }
+
+  if (["html", "htm"].includes(extension)) {
+    return {
+      label: "HTM",
+      tone: "border-[color-mix(in_oklch,var(--itera-color-icon-markdown)_30%,var(--itera-color-border))] text-[var(--itera-color-icon-markdown)]",
+    };
+  }
+
+  if (extension === "svg") {
+    return {
+      label: "SVG",
+      tone: "border-[color-mix(in_oklch,var(--itera-color-icon-markdown)_30%,var(--itera-color-border))] text-[var(--itera-color-icon-markdown)]",
+    };
+  }
+
+  if (extension === "json") return { label: "{ }", tone: "text-[var(--itera-color-muted)]" };
+  if (["md", "markdown"].includes(extension)) {
+    return { label: "MD", tone: "text-[var(--itera-color-muted)]" };
+  }
+
+  return { label: "TXT", tone: "text-[var(--itera-color-muted)]" };
+}
+
+function TabFileBadge({ name }: { name: string }) {
+  const badge = getTabFileBadge(name);
+
+  return (
+    <span
+      aria-hidden="true"
+      className={`grid h-[15px] w-[18px] shrink-0 place-items-center rounded-[3px] border border-[var(--itera-color-border)] bg-[var(--itera-color-surface)] font-mono text-[8.5px] font-semibold leading-none ${badge.tone}`}
+    >
+      {badge.label}
+    </span>
+  );
+}
 
 interface EditorWorkspaceProps {
   tabs: TabState[];
@@ -47,6 +111,29 @@ export function EditorWorkspace({
   onUpdateCursor,
   onUpdateScroll,
 }: EditorWorkspaceProps) {
+  const tabListRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const tabList = tabListRef.current;
+    if (!tabList) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        target.getAttribute("role") === "tab" &&
+        (event.key === "Delete" || event.key === "Backspace") &&
+        activePath
+      ) {
+        event.preventDefault();
+        onCloseTab(activePath);
+      }
+    };
+
+    tabList.addEventListener("keydown", handleKeyDown);
+    return () => tabList.removeEventListener("keydown", handleKeyDown);
+  }, [activePath, onCloseTab]);
+
   return (
     <section
       className="my-2 mr-2 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] bg-[var(--itera-color-surface)] shadow-[var(--itera-shadow-panel)]"
@@ -59,43 +146,62 @@ export function EditorWorkspace({
       >
         <div className="flex h-[38px] shrink-0 items-center gap-[3px] bg-transparent px-1.5">
           <TabList
+            ref={tabListRef}
             aria-label="打开的文件"
-            className="flex min-w-0 flex-1 items-center gap-[3px] overflow-x-auto"
+            className="flex min-w-0 flex-1 items-center gap-[3px] overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
-            {tabs.map((tab) => (
-              <Tab
-                key={tab.path}
-                id={tab.path}
-                className={`group relative flex h-7 max-w-[212px] shrink-0 items-center gap-1.5 rounded-[7px] border border-transparent pl-[11px] pr-[5px] text-[12.5px] text-[var(--itera-color-muted)] outline-none transition hover:bg-[var(--itera-color-hover)] focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] ${tab.path === activePath ? "bg-[var(--itera-color-primary-soft)] text-[var(--itera-color-ink)] before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:rounded-l-[7px] before:bg-[var(--itera-color-primary-border)]" : ""}`}
-                onDoubleClick={() => onPromoteTab(tab.path)}
-              >
-                <FileIcon node={{ name: tab.name, path: tab.path, type: "file" }} />
-                <span
-                  className={`min-w-0 flex-1 truncate ${tab.path === previewPath ? "italic" : ""}`}
+            {tabs.map((tab) => {
+              const isActive = tab.path === activePath;
+              const diskState = tab.missing
+                ? { glyph: "−", label: "已在磁盘上删除", tone: "danger" }
+                : tab.externalConflict
+                  ? { glyph: "!", label: "磁盘上已更改，与未保存修改冲突", tone: "warning" }
+                  : null;
+
+              return (
+                <Tab
+                  key={tab.path}
+                  id={tab.path}
+                  className={`group relative flex h-7 max-w-[212px] shrink-0 items-center gap-[7px] rounded-[7px] border border-transparent pl-[11px] text-[12.5px] text-[var(--itera-color-muted)] outline-none transition-colors focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${isActive ? "bg-[var(--itera-color-primary-soft)] font-medium text-[var(--itera-color-ink)] before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-[var(--itera-color-primary)] hover:bg-[var(--itera-color-primary-soft-strong)]" : "hover:bg-[var(--itera-color-sunken)] hover:text-[var(--itera-color-ink)]"}`}
+                  onDoubleClick={() => onPromoteTab(tab.path)}
                 >
-                  {tab.name}
-                </span>
-                <span className="relative mr-0.5 grid h-5 w-5 shrink-0 place-items-center">
-                  {tab.dirty ? (
+                  <TabFileBadge name={tab.name} />
+                  <span
+                    className={`min-w-0 flex-1 truncate ${tab.path === previewPath ? "italic" : ""} ${tab.missing ? "decoration-[1.5px] decoration-[var(--itera-color-danger)] line-through" : ""}`}
+                  >
+                    {tab.name}
+                  </span>
+                  {diskState ? (
                     <>
                       <span
                         aria-hidden="true"
-                        className="absolute h-1.5 w-1.5 rounded-full bg-[var(--itera-color-warning)] transition-opacity group-hover:opacity-0"
-                      />
-                      <span className="sr-only">未保存</span>
+                        className={`grid h-[15px] w-[15px] shrink-0 place-items-center rounded-[4px] font-mono text-[11px] font-semibold leading-none ${diskState.tone === "danger" ? "bg-[var(--itera-color-danger-hover-soft)] text-[var(--itera-color-danger)]" : "bg-[var(--itera-color-warning-hover-soft)] text-[var(--itera-color-warning)]"}`}
+                      >
+                        {diskState.glyph}
+                      </span>
+                      <span className="sr-only">（{diskState.label}）</span>
                     </>
                   ) : null}
-                  <Button
-                    className="absolute grid h-5 w-5 place-items-center rounded-[5px] text-[var(--itera-color-faint)] opacity-0 outline-none hover:bg-[var(--itera-color-press)] hover:text-[var(--itera-color-ink)] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] group-hover:opacity-100"
-                    aria-label={`关闭 ${tab.name}`}
-                    onClick={(event) => event.stopPropagation()}
-                    onPress={() => onCloseTab(tab.path)}
-                  >
-                    <Icon name="close" className="h-3 w-3" />
-                  </Button>
-                </span>
-              </Tab>
-            ))}
+                  {tab.dirty ? <span className="sr-only">（未保存）</span> : null}
+                  <span className="relative mr-[5px] grid h-5 w-5 shrink-0 place-items-center">
+                    <Button
+                      className={`peer relative grid h-5 w-5 place-items-center rounded-[5px] text-[var(--itera-color-muted)] outline-none before:absolute before:-inset-0.5 hover:text-[var(--itera-color-ink)] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset group-hover:opacity-100 ${isActive ? "hover:bg-[var(--itera-color-primary-soft-strong)]" : "hover:bg-[var(--itera-color-press)]"} ${tab.dirty ? "opacity-0" : "opacity-100"}`}
+                      aria-label={`关闭 ${tab.name}（⌘W）`}
+                      onClick={(event) => event.stopPropagation()}
+                      onPress={() => onCloseTab(tab.path)}
+                    >
+                      <Icon name="close" className="h-[9px] w-[9px]" />
+                    </Button>
+                    {tab.dirty ? (
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute h-[7px] w-[7px] rounded-full bg-[var(--itera-color-warning-marker)] transition-opacity group-hover:opacity-0 peer-focus-visible:opacity-0"
+                      />
+                    ) : null}
+                  </span>
+                </Tab>
+              );
+            })}
           </TabList>
           <Button
             isDisabled={!activeTab}
@@ -140,6 +246,7 @@ export function EditorWorkspace({
                 <CodeEditor
                   ref={editorRef}
                   value={activeTab.content}
+                  originalValue={activeTab.diskContent}
                   onChange={(content) => onUpdateContent(activeTab.path, content)}
                   language={activeTab.language}
                   readOnly={activeTab.readOnly}

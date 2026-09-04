@@ -9,6 +9,8 @@ interface WorkspaceSidebarProps {
   ignoredPatterns: string[];
   expandedDirs: Record<string, boolean>;
   activePath: string | null;
+  dirtyFiles: ReadonlySet<string>;
+  dirtyDirectories: ReadonlySet<string>;
   sidebarWidth: number;
   syncStatus: "idle" | "reading" | "synced" | "failed";
   statusText: string;
@@ -24,6 +26,8 @@ export function WorkspaceSidebar({
   ignoredPatterns,
   expandedDirs,
   activePath,
+  dirtyFiles,
+  dirtyDirectories,
   sidebarWidth,
   syncStatus,
   statusText,
@@ -65,6 +69,8 @@ export function WorkspaceSidebar({
           nodes={tree}
           expandedDirs={expandedDirs}
           activePath={activePath}
+          dirtyFiles={dirtyFiles}
+          dirtyDirectories={dirtyDirectories}
           onOpenFile={onOpenFile}
           onToggleDirectory={onToggleDirectory}
         />

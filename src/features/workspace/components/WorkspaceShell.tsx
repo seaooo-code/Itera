@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import type { CodeEditorHandle } from "../../editor/components/CodeEditor";
 import { formatFileError } from "../../../services/tauri/filesystem";
-import { selectActiveTab } from "../store/selectors";
+import { getDirtyPathState, selectActiveTab } from "../store/selectors";
 import { useWorkspaceStore } from "../store/workspaceStore";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { EditorWorkspace } from "./EditorWorkspace";
@@ -52,6 +52,7 @@ export function WorkspaceShell() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const dirtyPaths = useMemo(() => getDirtyPathState(tabs), [tabs]);
 
   const showToast = useCallback(
     (message: string, tone: ToastState["tone"] = "neutral", detail?: string) => {
@@ -328,6 +329,8 @@ export function WorkspaceShell() {
                 ignoredPatterns={ignoredPatterns}
                 expandedDirs={expandedDirs}
                 activePath={activePath}
+                dirtyFiles={dirtyPaths.files}
+                dirtyDirectories={dirtyPaths.directories}
                 sidebarWidth={sidebarWidth}
                 syncStatus={syncState.status}
                 statusText={statusText}
