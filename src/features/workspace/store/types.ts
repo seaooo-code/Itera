@@ -46,6 +46,8 @@ export interface FindState {
   totalMatches: number;
 }
 
+export type EditorViewMode = "edit" | "split" | "preview";
+
 export interface SyncState {
   status: "idle" | "reading" | "synced" | "failed";
   error: string | null;
@@ -72,6 +74,7 @@ export interface WorkspaceState {
   previewPath: string | null;
   sidebarVisible: boolean;
   sidebarWidth: number;
+  editorViewMode: EditorViewMode;
   findState: FindState;
   recentProjects: RecentProject[];
   syncState: SyncState;
@@ -96,6 +99,7 @@ export interface WorkspaceActions {
   dismissExternalChangeSummary: () => void;
   toggleSidebar: () => void;
   resizeSidebar: (width: number) => void;
+  setEditorViewMode: (mode: EditorViewMode) => void;
   openFind: () => void;
   closeFind: () => void;
   setFindQuery: (query: string) => void;

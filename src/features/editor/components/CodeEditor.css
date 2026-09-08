@@ -26,6 +26,40 @@
   position: relative;
 }
 
+.code-editor .cm-foldGutter {
+  width: 18px;
+}
+
+.code-editor .cm-foldGutter .cm-gutterElement {
+  width: 18px;
+  padding: 0;
+}
+
+.code-editor .cm-fold-marker {
+  display: none;
+  width: 18px;
+  height: var(--itera-editor-line-height);
+  place-items: center;
+  color: var(--itera-color-muted);
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.code-editor .cm-fold-marker svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+.code-editor .cm-fold-marker-closed,
+.code-editor .cm-editor.cm-fold-gutter-hovered .cm-fold-marker {
+  display: grid;
+}
+
+.code-editor .cm-fold-marker:hover {
+  color: var(--itera-color-ink);
+}
+
 .code-editor .cm-change-added::before,
 .code-editor .cm-change-modified::before {
   position: absolute;

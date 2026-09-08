@@ -13,6 +13,7 @@ import { TitleBar } from "./TitleBar";
 import type { ConfirmState, ToastState } from "./viewTypes";
 import { Welcome } from "./Welcome";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
+import { isFileViewerPreviewSupported } from "./fileViewerSupport";
 
 export function WorkspaceShell() {
   const project = useWorkspaceStore((state) => state.project);
@@ -26,6 +27,7 @@ export function WorkspaceShell() {
   const previewPath = useWorkspaceStore((state) => state.previewPath);
   const sidebarVisible = useWorkspaceStore((state) => state.sidebarVisible);
   const sidebarWidth = useWorkspaceStore((state) => state.sidebarWidth);
+  const editorViewMode = useWorkspaceStore((state) => state.editorViewMode);
   const findState = useWorkspaceStore((state) => state.findState);
   const recentProjects = useWorkspaceStore((state) => state.recentProjects);
   const syncState = useWorkspaceStore((state) => state.syncState);
@@ -47,6 +49,7 @@ export function WorkspaceShell() {
   );
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const resizeSidebar = useWorkspaceStore((state) => state.resizeSidebar);
+  const setEditorViewMode = useWorkspaceStore((state) => state.setEditorViewMode);
   const openFind = useWorkspaceStore((state) => state.openFind);
   const closeFind = useWorkspaceStore((state) => state.closeFind);
   const setFindQuery = useWorkspaceStore((state) => state.setFindQuery);
@@ -244,6 +247,14 @@ export function WorkspaceShell() {
     [findState.caseSensitive, findState.query, setFindMatch],
   );
 
+  const handleOpenFind = useCallback(() => {
+    if (!activeTab || activeTab.binary) return;
+    if (isFileViewerPreviewSupported(activeTab.name) && editorViewMode === "preview") {
+      setEditorViewMode("split");
+    }
+    openFind();
+  }, [activeTab, editorViewMode, openFind, setEditorViewMode]);
+
   const onCancelConfirm = useCallback(() => setConfirmState(null), []);
 
   useEffect(() => {
@@ -257,7 +268,18 @@ export function WorkspaceShell() {
         toggleSidebar();
       } else if (modifier && event.key.toLowerCase() === "f") {
         event.preventDefault();
-        if (activeTab && !activeTab.binary) openFind();
+        handleOpenFind();
+      } else if (
+        modifier &&
+        project &&
+        activeTab &&
+        isFileViewerPreviewSupported(activeTab.name) &&
+        (!activeTab.binary || event.key === "3") &&
+        ["1", "2", "3"].includes(event.key)
+      ) {
+        event.preventDefault();
+        const modes = ["edit", "split", "preview"] as const;
+        setEditorViewMode(modes[Number(event.key) - 1]);
       } else if (modifier && event.key.toLowerCase() === "s") {
         event.preventDefault();
         handleSave();
@@ -279,9 +301,11 @@ export function WorkspaceShell() {
     findState.isOpen,
     handleChooseProject,
     handleCloseTab,
+    handleOpenFind,
     handleSave,
     onCancelConfirm,
-    openFind,
+    project,
+    setEditorViewMode,
     toggleSidebar,
   ]);
 
@@ -314,6 +338,7 @@ export function WorkspaceShell() {
             ? `已同步 ${formatClock(project.syncedAt)}`
             : "未打开项目";
   const lineSelection = activeTab ? Math.abs(activeTab.cursor.head - activeTab.cursor.anchor) : 0;
+  const findAvailable = Boolean(activeTab && !activeTab.binary);
 
   return (
     <main className="h-full w-full overflow-auto bg-[var(--itera-color-sunken)] text-[var(--itera-color-ink)]">
@@ -325,11 +350,13 @@ export function WorkspaceShell() {
           project={project}
           recentProjects={recentProjects}
           activeTab={activeTab}
+          editorViewMode={editorViewMode}
           sidebarVisible={sidebarVisible}
           onToggleSidebar={toggleSidebar}
           onChooseProject={handleChooseProject}
           onOpenRecent={handleOpenRecent}
           onCloseProject={handleCloseProject}
+          onSetEditorViewMode={setEditorViewMode}
           onSave={handleSave}
         />
 
@@ -369,12 +396,13 @@ export function WorkspaceShell() {
               previewRevision={project.syncedAt}
               treeChanges={treeChanges}
               activeTab={activeTab}
+              editorViewMode={editorViewMode}
               findState={findState}
               editorRef={editorRef}
               onSetActiveTab={setActiveTab}
               onCloseTab={handleCloseTab}
               onPromoteTab={(path) => handleOpenFile(path, { preview: false })}
-              onOpenFind={openFind}
+              onOpenFind={handleOpenFind}
               onCloseFind={closeFind}
               onSetFindQuery={setFindQuery}
               onSetFindCaseSensitive={setFindCaseSensitive}
@@ -393,7 +421,8 @@ export function WorkspaceShell() {
           syncState={syncState}
           lineSelection={lineSelection}
           lineChanges={lineChanges}
-          onOpenFind={openFind}
+          findAvailable={findAvailable}
+          onOpenFind={handleOpenFind}
         />
 
         {externalChangeSummary && project ? (

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { FileIcon as DefaultFileIcon } from "@phosphor-icons/react/File";
 import { FileCodeIcon } from "@phosphor-icons/react/FileCode";
 import { FileCssIcon } from "@phosphor-icons/react/FileCss";
@@ -13,9 +14,7 @@ import { FileSvgIcon } from "@phosphor-icons/react/FileSvg";
 import { FileTextIcon } from "@phosphor-icons/react/FileText";
 import { FileTsIcon } from "@phosphor-icons/react/FileTs";
 import { FileTsxIcon } from "@phosphor-icons/react/FileTsx";
-import { FolderSimpleIcon } from "@phosphor-icons/react/FolderSimple";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
-import type { FileTreeNode } from "../../../services/tauri/filesystem";
 import { fileExtension } from "../../../shared/utils/path";
 
 type FileIconKind =
@@ -111,21 +110,8 @@ function fileIconKind(name: string): FileIconKind {
   return "default";
 }
 
-export function FileIcon({ node }: { node: FileTreeNode }) {
-  if (node.type === "directory") {
-    return (
-      <FolderSimpleIcon
-        size={15}
-        weight="regular"
-        className="shrink-0 text-[var(--itera-color-muted)]"
-        aria-hidden
-      />
-    );
-  }
+export const FileIcon = memo(function FileIcon({ name }: { name: string }) {
+  const { component: FileIconComponent, tone } = FILE_ICON_DEFINITIONS[fileIconKind(name)];
 
-  const { component: FileIconComponent, tone } = FILE_ICON_DEFINITIONS[fileIconKind(node.name)];
-
-  return (
-    <FileIconComponent size={15} weight="regular" className={`shrink-0 ${tone}`} aria-hidden />
-  );
-}
+  return <FileIconComponent size={15} weight="regular" className={tone} aria-hidden />;
+});

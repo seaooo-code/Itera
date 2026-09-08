@@ -10,6 +10,7 @@ interface StatusBarProps {
   syncState: SyncState;
   lineSelection: number;
   lineChanges: LineChangeSummary;
+  findAvailable: boolean;
   onOpenFind: () => void;
 }
 
@@ -19,6 +20,7 @@ export function StatusBar({
   syncState,
   lineSelection,
   lineChanges,
+  findAvailable,
   onOpenFind,
 }: StatusBarProps) {
   return (
@@ -94,7 +96,7 @@ export function StatusBar({
         type="button"
         className="h-6 shrink-0 rounded-[5px] border border-transparent bg-transparent px-2 font-mono text-[11px] text-[var(--itera-color-muted)] outline-none hover:border-[var(--itera-color-border)] hover:bg-[var(--itera-color-hover)] hover:text-[var(--itera-color-ink)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed disabled:opacity-45"
         onClick={onOpenFind}
-        disabled={!activeTab || activeTab.binary}
+        disabled={!findAvailable}
       >
         ⌘F 查找
       </button>

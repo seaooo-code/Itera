@@ -2,10 +2,18 @@ import { useEffect, useRef, type RefObject } from "react";
 import { Button, Tab, TabList, Tabs } from "react-aria-components";
 import { CodeEditor, type CodeEditorHandle } from "../../editor/components/CodeEditor";
 import { fileExtension } from "../../../shared/utils/path";
-import type { CursorState, FindState, TabState, TreeChangeKind } from "../store/types";
+import type {
+  CursorState,
+  EditorViewMode,
+  FindState,
+  TabState,
+  TreeChangeKind,
+} from "../store/types";
 import { Icon } from "../../../shared/components/Icon";
 import { FilePreview } from "./FilePreview";
 import { FindBar } from "./FindBar";
+import { TextFilePreview } from "./TextFilePreview";
+import { isFileViewerPreviewSupported } from "./fileViewerSupport";
 
 interface TabFileBadgeDefinition {
   label: string;
@@ -78,6 +86,7 @@ interface EditorWorkspaceProps {
   previewRevision: number | null;
   treeChanges: Record<string, TreeChangeKind>;
   activeTab: TabState | null;
+  editorViewMode: EditorViewMode;
   findState: FindState;
   editorRef: RefObject<CodeEditorHandle | null>;
   onSetActiveTab: (path: string) => void;
@@ -101,6 +110,7 @@ export function EditorWorkspace({
   previewRevision,
   treeChanges,
   activeTab,
+  editorViewMode,
   findState,
   editorRef,
   onSetActiveTab,
@@ -142,16 +152,24 @@ export function EditorWorkspace({
     activeTab &&
     !activeTab.diskNoticeDismissed &&
     (activeTab.externalConflict || activeTab.missing);
+  const supportsFilePreview = Boolean(activeTab && isFileViewerPreviewSupported(activeTab.name));
+  const activeViewMode = !supportsFilePreview
+    ? "edit"
+    : activeTab?.binary
+      ? "preview"
+      : editorViewMode;
+  const showEditor = activeViewMode !== "preview";
+  const showPreview = supportsFilePreview && activeViewMode !== "edit";
 
   return (
     <section
-      className="my-2 mr-2 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[8px] bg-[var(--itera-color-surface)] shadow-[var(--itera-shadow-panel)]"
+      className={`my-2 mr-2 flex min-h-0 min-w-0 flex-1 overflow-hidden ${showEditor && showPreview ? "gap-2" : "rounded-[9px] bg-[var(--itera-color-surface)] shadow-[var(--itera-shadow-panel)]"}`}
       aria-label="编辑器工作区"
     >
       <Tabs
         selectedKey={activePath ?? undefined}
         onSelectionChange={(key) => onSetActiveTab(String(key))}
-        className="flex min-h-0 flex-1 flex-col"
+        className={`flex min-h-0 min-w-0 flex-col overflow-hidden ${showEditor && showPreview ? "basis-[56%] rounded-[9px] bg-[var(--itera-color-surface)] shadow-[var(--itera-shadow-panel)]" : "flex-1"}`}
       >
         <div className="flex h-[38px] shrink-0 items-center gap-[3px] bg-transparent px-1.5">
           <TabList
@@ -229,7 +247,7 @@ export function EditorWorkspace({
             })}
           </TabList>
           <Button
-            isDisabled={!activeTab || activeTab.binary}
+            isDisabled={!activeTab || activeTab.binary || !showEditor}
             className="mr-1.5 grid h-7 w-7 self-center place-items-center rounded-[6px] border border-transparent text-[var(--itera-color-muted)] outline-none hover:bg-[var(--itera-color-hover)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:opacity-40"
             aria-label="打开文件内查找（⌘F）"
             onPress={onOpenFind}
@@ -268,8 +286,84 @@ export function EditorWorkspace({
           </div>
         ) : null}
         <div className="relative min-h-0 flex-1 overflow-hidden">
-          {activeTab ? (
-            <div className="relative h-full">
+          {showEditor ? (
+            activeTab ? (
+              <div className="relative h-full">
+                {activeTab.binary ? (
+                  <FilePreview
+                    key={`${activeTab.path}:${previewRevision ?? 0}`}
+                    path={activeTab.path}
+                    name={activeTab.name}
+                    byteLength={activeTab.byteLength}
+                  />
+                ) : (
+                  <div className="relative h-full min-w-0">
+                    <FindBar
+                      isOpen={findState.isOpen}
+                      query={findState.query}
+                      caseSensitive={findState.caseSensitive}
+                      currentMatch={findState.currentMatch}
+                      totalMatches={findState.totalMatches}
+                      onQueryChange={onSetFindQuery}
+                      onCaseSensitiveChange={onSetFindCaseSensitive}
+                      onMove={onFindMove}
+                      onClose={onCloseFind}
+                    />
+                    <div className="h-full">
+                      <CodeEditor
+                        ref={editorRef}
+                        value={activeTab.content}
+                        originalValue={
+                          activeTab.missing ? activeTab.content : activeTab.diskContent
+                        }
+                        onChange={(content) => onUpdateContent(activeTab.path, content)}
+                        language={activeTab.language}
+                        readOnly={activeTab.readOnly}
+                        cursor={activeTab.cursor}
+                        scrollTop={activeTab.scrollTop}
+                        searchQuery={findState.query}
+                        searchCaseSensitive={findState.caseSensitive}
+                        onCursorChange={(cursor) => onUpdateCursor(activeTab.path, cursor)}
+                        onScrollChange={(scrollTop) => onUpdateScroll(activeTab.path, scrollTop)}
+                        ariaLabel={`${activeTab.name} 编辑器`}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="grid h-full place-items-center px-6 text-center">
+                <div>
+                  <div className="mx-auto grid h-[34px] w-[34px] place-items-center rounded-[9px] bg-[var(--itera-color-sunken)] text-[var(--itera-color-muted)]">
+                    <Icon name="code" className="h-[18px] w-[18px]" />
+                  </div>
+                  <h2 className="mb-0 mt-3.5 text-[14px] font-semibold text-[var(--itera-color-ink)]">
+                    当前没有打开的文件
+                  </h2>
+                  <p className="mx-auto mb-0 mt-[7px] max-w-[40ch] text-[12.5px] leading-[1.7] text-[var(--itera-color-muted)]">
+                    单击文件树中的文件即可预览，双击固定为常驻 Tab。固定的 Tab 会保留到下次启动。
+                  </p>
+                  <div className="mt-[18px] flex justify-center gap-[18px]">
+                    {[
+                      ["⌘O", "打开项目"],
+                      ["⇧⏎", "在文件树中直接固定"],
+                      ["⌘B", "显示 / 隐藏文件树"],
+                    ].map(([key, label]) => (
+                      <div key={key} className="grid justify-items-center gap-1">
+                        <kbd className="rounded-[5px] bg-[var(--itera-color-sunken)] px-[7px] py-[3px] font-mono text-[11px] text-[var(--itera-color-ink)]">
+                          {key}
+                        </kbd>
+                        <span className="text-[11.5px] text-[var(--itera-color-muted)]">
+                          {label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )
+          ) : activeTab ? (
+            <div className="h-full min-w-0">
               {activeTab.binary ? (
                 <FilePreview
                   key={`${activeTab.path}:${previewRevision ?? 0}`}
@@ -278,69 +372,45 @@ export function EditorWorkspace({
                   byteLength={activeTab.byteLength}
                 />
               ) : (
-                <>
-                  <FindBar
-                    isOpen={findState.isOpen}
-                    query={findState.query}
-                    caseSensitive={findState.caseSensitive}
-                    currentMatch={findState.currentMatch}
-                    totalMatches={findState.totalMatches}
-                    onQueryChange={onSetFindQuery}
-                    onCaseSensitiveChange={onSetFindCaseSensitive}
-                    onMove={onFindMove}
-                    onClose={onCloseFind}
-                  />
-                  <div className="h-full">
-                    <CodeEditor
-                      ref={editorRef}
-                      value={activeTab.content}
-                      originalValue={activeTab.missing ? activeTab.content : activeTab.diskContent}
-                      onChange={(content) => onUpdateContent(activeTab.path, content)}
-                      language={activeTab.language}
-                      readOnly={activeTab.readOnly}
-                      cursor={activeTab.cursor}
-                      scrollTop={activeTab.scrollTop}
-                      searchQuery={findState.query}
-                      searchCaseSensitive={findState.caseSensitive}
-                      onCursorChange={(cursor) => onUpdateCursor(activeTab.path, cursor)}
-                      onScrollChange={(scrollTop) => onUpdateScroll(activeTab.path, scrollTop)}
-                      ariaLabel={`${activeTab.name} 编辑器`}
-                    />
-                  </div>
-                </>
+                <TextFilePreview
+                  key={activeTab.path}
+                  name={activeTab.name}
+                  content={activeTab.content}
+                />
               )}
             </div>
-          ) : (
-            <div className="grid h-full place-items-center px-6 text-center">
-              <div>
-                <div className="mx-auto grid h-[34px] w-[34px] place-items-center rounded-[9px] bg-[var(--itera-color-sunken)] text-[var(--itera-color-muted)]">
-                  <Icon name="code" className="h-[18px] w-[18px]" />
-                </div>
-                <h2 className="mb-0 mt-3.5 text-[14px] font-semibold text-[var(--itera-color-ink)]">
-                  当前没有打开的文件
-                </h2>
-                <p className="mx-auto mb-0 mt-[7px] max-w-[40ch] text-[12.5px] leading-[1.7] text-[var(--itera-color-muted)]">
-                  单击文件树中的文件即可预览，双击固定为常驻 Tab。固定的 Tab 会保留到下次启动。
-                </p>
-                <div className="mt-[18px] flex justify-center gap-[18px]">
-                  {[
-                    ["⌘O", "打开项目"],
-                    ["⇧⏎", "在文件树中直接固定"],
-                    ["⌘B", "显示 / 隐藏文件树"],
-                  ].map(([key, label]) => (
-                    <div key={key} className="grid justify-items-center gap-1">
-                      <kbd className="rounded-[5px] bg-[var(--itera-color-sunken)] px-[7px] py-[3px] font-mono text-[11px] text-[var(--itera-color-ink)]">
-                        {key}
-                      </kbd>
-                      <span className="text-[11.5px] text-[var(--itera-color-muted)]">{label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          ) : null}
         </div>
       </Tabs>
+      {showEditor && showPreview && activeTab ? (
+        <section
+          className={`flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[9px] bg-[var(--itera-color-surface)] shadow-[var(--itera-shadow-panel)] ${showEditor ? "basis-[44%]" : "flex-1"}`}
+          aria-label={`${activeTab.name} 文件预览`}
+        >
+          <div className="flex h-[38px] shrink-0 items-center gap-[7px] px-1.5 pl-[11px]">
+            <TabFileBadge name={activeTab.name} />
+            <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[var(--itera-color-ink)]">
+              {activeTab.name}
+            </span>
+          </div>
+          <div className="min-h-0 flex-1">
+            {activeTab.binary ? (
+              <FilePreview
+                key={`${activeTab.path}:${previewRevision ?? 0}`}
+                path={activeTab.path}
+                name={activeTab.name}
+                byteLength={activeTab.byteLength}
+              />
+            ) : (
+              <TextFilePreview
+                key={activeTab.path}
+                name={activeTab.name}
+                content={activeTab.content}
+              />
+            )}
+          </div>
+        </section>
+      ) : null}
     </section>
   );
 }

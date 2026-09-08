@@ -20,6 +20,7 @@ import type {
 
 export type {
   CursorState,
+  EditorViewMode,
   ExternalChangeSummary,
   FindState,
   ProjectState,
@@ -185,6 +186,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       previewPath: null,
       sidebarVisible: true,
       sidebarWidth: 264,
+      editorViewMode: "edit",
       findState: {
         isOpen: false,
         query: "",
@@ -537,6 +539,21 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       resizeSidebar: (width) => set({ sidebarWidth: clampSidebar(width) }),
 
+      setEditorViewMode: (editorViewMode) =>
+        set((state) => ({
+          editorViewMode,
+          findState:
+            editorViewMode === "preview"
+              ? {
+                  ...state.findState,
+                  isOpen: false,
+                  query: "",
+                  currentMatch: 0,
+                  totalMatches: 0,
+                }
+              : state.findState,
+        })),
+
       openFind: () => set((state) => ({ findState: { ...state.findState, isOpen: true } })),
 
       closeFind: () =>
@@ -619,6 +636,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         activePath: state.activePath,
         sidebarVisible: state.sidebarVisible,
         sidebarWidth: state.sidebarWidth,
+        editorViewMode: state.editorViewMode,
         findState: {
           isOpen: false,
           query: "",

@@ -1,11 +1,13 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 import { Button, Menu, MenuItem, MenuTrigger, Popover, Toolbar } from "react-aria-components";
-import type { ProjectState, RecentProject, TabState } from "../store/types";
+import type { EditorViewMode, ProjectState, RecentProject, TabState } from "../store/types";
 import { Icon } from "../../../shared/components/Icon";
 import { isTauriRuntime } from "../../../services/tauri/runtime";
 import { shortPath } from "../../../shared/utils/path";
 import { formatRelativeTime } from "../../../shared/utils/time";
+import { EditorViewModeControl } from "./EditorViewModeControl";
+import { isFileViewerPreviewSupported } from "./fileViewerSupport";
 
 const isMacTitlebar = /Macintosh|Mac OS X/.test(navigator.userAgent);
 
@@ -48,11 +50,13 @@ interface TitleBarProps {
   project: ProjectState | null;
   recentProjects: RecentProject[];
   activeTab: TabState | null;
+  editorViewMode: EditorViewMode;
   sidebarVisible: boolean;
   onToggleSidebar: () => void;
   onChooseProject: () => void;
   onOpenRecent: (path: string) => void;
   onCloseProject: () => void;
+  onSetEditorViewMode: (mode: EditorViewMode) => void;
   onSave: () => void;
 }
 
@@ -60,11 +64,13 @@ export function TitleBar({
   project,
   recentProjects,
   activeTab,
+  editorViewMode,
   sidebarVisible,
   onToggleSidebar,
   onChooseProject,
   onOpenRecent,
   onCloseProject,
+  onSetEditorViewMode,
   onSave,
 }: TitleBarProps) {
   const breadcrumbParts = activeTab?.relativePath.split("/") ?? [];
@@ -206,8 +212,20 @@ export function TitleBar({
       <Toolbar
         data-tauri-drag-region
         aria-label="文件操作"
-        className="flex min-w-0 items-center justify-end gap-1"
+        className="flex min-w-0 items-center justify-end gap-2.5"
       >
+        <EditorViewModeControl
+          value={
+            !activeTab || !isFileViewerPreviewSupported(activeTab.name)
+              ? "edit"
+              : activeTab.binary
+                ? "preview"
+                : editorViewMode
+          }
+          isDisabled={!project || !activeTab || !isFileViewerPreviewSupported(activeTab.name)}
+          isPreviewOnly={Boolean(activeTab?.binary && isFileViewerPreviewSupported(activeTab.name))}
+          onChange={onSetEditorViewMode}
+        />
         <Button
           className="flex h-7 items-center gap-2 rounded-[7px] border border-[var(--itera-color-warning-border)] bg-[var(--itera-color-warning-soft)] px-[9px] text-[12.5px] font-medium text-[var(--itera-color-warning)] outline-none hover:border-[var(--itera-color-warning-marker)] hover:bg-[var(--itera-color-warning-hover-soft)] hover:text-[var(--itera-color-warning-hover)] active:bg-[var(--itera-color-warning-press-soft)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-transparent disabled:text-[color-mix(in_oklch,var(--itera-color-muted)_62%,var(--itera-color-sunken))]"
           isDisabled={!activeTab || activeTab.readOnly || !activeTab.dirty}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import type { FileTreeNode } from "../../../services/tauri/filesystem";
 import { Icon } from "../../../shared/components/Icon";
 import type { TreeChangeKind } from "../store/types";
+import { DirectoryIcon } from "./DirectoryIcon";
 import { FileIcon } from "./FileIcon";
 
 function getVisibleNodes(nodes: FileTreeNode[], expandedDirs: Record<string, boolean>) {
@@ -153,8 +154,8 @@ export function FileTree({
             aria-expanded={node.type === "directory" ? Boolean(expandedDirs[node.path]) : undefined}
             aria-selected={isFile ? isActive : undefined}
             tabIndex={node.path === tabStopPath ? 0 : -1}
-            className={`group relative flex h-[26px] w-full select-none items-center gap-1.5 rounded-[5px] border-0 bg-transparent pr-1.5 text-left text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${isActive ? "bg-[var(--itera-color-primary-soft)] before:absolute before:inset-y-[3px] before:left-0 before:w-0.5 before:rounded-[1px] before:bg-[var(--itera-color-primary)] hover:bg-[var(--itera-color-primary-soft-strong)]" : "hover:bg-[var(--itera-color-hover)]"}`}
-            style={{ paddingLeft: `${6 + (level - 1) * 13 + (isFile ? 18 : 0)}px` }}
+            className={`group relative flex h-[26px] [overflow-anchor:none] w-full select-none items-center rounded-[5px] border-0 bg-transparent pr-1.5 text-left text-[12.5px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] focus-visible:ring-inset ${isActive ? "bg-[var(--itera-color-primary-soft)] before:absolute before:inset-y-[3px] before:left-0 before:w-0.5 before:rounded-[1px] before:bg-[var(--itera-color-primary)] hover:bg-[var(--itera-color-primary-soft-strong)]" : "hover:bg-[var(--itera-color-hover)]"}`}
+            style={{ paddingLeft: `${6 + (level - 1) * 13}px` }}
             onFocus={() => setFocusedPath(node.path)}
             onClick={() =>
               node.type === "directory"
@@ -166,17 +167,26 @@ export function FileTree({
             }}
             onKeyDown={(event) => onTreeKeyDown(event, node)}
           >
-            {node.type === "directory" ? (
-              <span className="grid h-3 w-3 shrink-0 place-items-center text-[var(--itera-color-muted)]">
+            <span
+              aria-hidden="true"
+              className="grid h-4 w-4 shrink-0 place-items-center text-[var(--itera-color-muted)]"
+            >
+              {node.type === "directory" ? (
                 <Icon
                   name="chevron-right"
-                  className={`h-3 w-3 transition-transform ${expandedDirs[node.path] ? "rotate-90" : ""}`}
+                  className={`h-3 w-3 ${expandedDirs[node.path] ? "rotate-90" : ""}`}
                 />
-              </span>
-            ) : null}
-            <FileIcon node={node} />
+              ) : null}
+            </span>
+            <span aria-hidden="true" className="grid h-4 w-4 shrink-0 place-items-center">
+              {node.type === "directory" ? (
+                <DirectoryIcon name={node.name} />
+              ) : (
+                <FileIcon name={node.name} />
+              )}
+            </span>
             <span
-              className={`min-w-0 flex-1 truncate ${isActive ? "font-medium text-[var(--itera-color-ink)]" : isFile && !isOpened ? "text-[var(--itera-color-muted)]" : "text-[var(--itera-color-ink)]"}`}
+              className={`ml-1.5 min-w-0 flex-1 truncate ${isActive ? "font-medium text-[var(--itera-color-ink)]" : isFile && !isOpened ? "text-[var(--itera-color-muted)]" : "text-[var(--itera-color-ink)]"}`}
             >
               {node.name}
             </span>
@@ -215,7 +225,7 @@ export function FileTree({
       ref={treeRef}
       role="tree"
       aria-label="项目文件树"
-      className="min-h-0 flex-1 overflow-auto px-1.5 pb-2.5 pt-1.5"
+      className="min-h-0 flex-1 overflow-auto px-1.5 pb-2.5 pt-1.5 [overflow-anchor:none] [scrollbar-gutter:stable]"
     >
       {nodes.length ? (
         renderNodes(nodes, 1)

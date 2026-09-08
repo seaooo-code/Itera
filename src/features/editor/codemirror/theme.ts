@@ -17,7 +17,7 @@ export const editorLayoutTheme = EditorView.theme({
     overflow: "auto",
   },
   ".cm-content": {
-    padding: "12px 20px 48px",
+    padding: "12px 20px 48px 8px",
     lineHeight: "var(--itera-editor-line-height)",
     fontWeight: "500",
     caretColor: "var(--itera-color-ink)",
@@ -26,7 +26,7 @@ export const editorLayoutTheme = EditorView.theme({
     display: "block",
     height: "var(--itera-editor-line-height)",
     lineHeight: "var(--itera-editor-line-height)",
-    padding: "0",
+    padding: "0 0 0 12px",
   },
   ".cm-gutters": {
     paddingTop: "0",
@@ -35,7 +35,7 @@ export const editorLayoutTheme = EditorView.theme({
     border: "0",
     fontSize: "11.5px",
     lineHeight: "var(--itera-editor-line-height)",
-    minWidth: "58px",
+    minWidth: "0",
   },
   ".cm-gutter": {
     lineHeight: "var(--itera-editor-line-height)",
@@ -44,8 +44,8 @@ export const editorLayoutTheme = EditorView.theme({
     lineHeight: "var(--itera-editor-line-height)",
   },
   ".cm-lineNumbers .cm-gutterElement": {
-    padding: "0 12px 0 0",
-    minWidth: "58px",
+    padding: "0 6px 0 8px",
+    minWidth: "38px",
     lineHeight: "var(--itera-editor-line-height)",
     textAlign: "right",
   },

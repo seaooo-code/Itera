@@ -154,14 +154,26 @@ export const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(function
     });
 
     const scroller = view.scrollDOM;
+    const foldGutter = view.dom.querySelector<HTMLElement>(".cm-foldGutter");
+    const setFoldGutterHovered = () => view.dom.classList.add("cm-fold-gutter-hovered");
+    const clearFoldGutterHovered = () => view.dom.classList.remove("cm-fold-gutter-hovered");
     const handleScroll = () => onScrollChangeRef.current?.(scroller.scrollTop);
     scroller.addEventListener("scroll", handleScroll, { passive: true });
+    foldGutter?.addEventListener("pointerenter", setFoldGutterHovered);
+    foldGutter?.addEventListener("pointerleave", clearFoldGutterHovered);
+    foldGutter?.addEventListener("pointercancel", clearFoldGutterHovered);
+    window.addEventListener("blur", clearFoldGutterHovered);
     viewRef.current = view;
     onCursorChangeRef.current?.(cursorFromView(view));
     onScrollChangeRef.current?.(scroller.scrollTop);
 
     return () => {
       scroller.removeEventListener("scroll", handleScroll);
+      foldGutter?.removeEventListener("pointerenter", setFoldGutterHovered);
+      foldGutter?.removeEventListener("pointerleave", clearFoldGutterHovered);
+      foldGutter?.removeEventListener("pointercancel", clearFoldGutterHovered);
+      window.removeEventListener("blur", clearFoldGutterHovered);
+      clearFoldGutterHovered();
       view.destroy();
       viewRef.current = null;
     };

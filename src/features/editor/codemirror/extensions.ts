@@ -5,6 +5,10 @@ import {
   completionKeymap,
 } from "@codemirror/autocomplete";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { CaretDownIcon } from "@phosphor-icons/react/CaretDown";
+import { CaretRightIcon } from "@phosphor-icons/react/CaretRight";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   bracketMatching,
   defaultHighlightStyle,
@@ -33,11 +37,26 @@ import {
 } from "@codemirror/view";
 import type { CursorState } from "../../workspace/store/types";
 
+function createFoldMarker(open: boolean) {
+  const marker = document.createElement("span");
+  marker.className = `cm-fold-marker ${open ? "cm-fold-marker-open" : "cm-fold-marker-closed"}`;
+  marker.title = open ? "折叠代码" : "展开代码";
+  marker.innerHTML = renderToStaticMarkup(
+    createElement(open ? CaretDownIcon : CaretRightIcon, {
+      "aria-hidden": true,
+      focusable: "false",
+      size: 12,
+      weight: "regular",
+    }),
+  );
+  return marker;
+}
+
 export const editorSetup: Extension = [
   lineNumbers(),
   highlightSpecialChars(),
   history(),
-  foldGutter(),
+  foldGutter({ markerDOM: createFoldMarker }),
   drawSelection(),
   dropCursor(),
   indentOnInput(),
