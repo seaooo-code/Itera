@@ -11,7 +11,10 @@ interface StatusBarProps {
   lineSelection: number;
   lineChanges: LineChangeSummary;
   findAvailable: boolean;
+  terminalVisible: boolean;
+  terminalRunningCount: number;
   onOpenFind: () => void;
+  onToggleTerminal: () => void;
 }
 
 export function StatusBar({
@@ -21,7 +24,10 @@ export function StatusBar({
   lineSelection,
   lineChanges,
   findAvailable,
+  terminalVisible,
+  terminalRunningCount,
   onOpenFind,
+  onToggleTerminal,
 }: StatusBarProps) {
   return (
     <footer
@@ -99,6 +105,20 @@ export function StatusBar({
         disabled={!findAvailable}
       >
         ⌘F 查找
+      </button>
+      <button
+        type="button"
+        className="h-6 shrink-0 rounded-[5px] border border-transparent bg-transparent px-2 font-mono text-[11px] text-[var(--itera-color-muted)] outline-none hover:border-[var(--itera-color-border)] hover:bg-[var(--itera-color-hover)] hover:text-[var(--itera-color-ink)] focus-visible:ring-2 focus-visible:ring-[var(--itera-color-primary-solid)] disabled:cursor-not-allowed disabled:opacity-45"
+        aria-pressed={terminalVisible}
+        onClick={onToggleTerminal}
+        disabled={!project}
+        title={
+          terminalRunningCount
+            ? `${terminalRunningCount} 个终端 Shell 正在运行（⌘J 显示 / 隐藏面板）`
+            : "显示 / 隐藏终端面板（⌘J）"
+        }
+      >
+        {terminalRunningCount ? `终端 · ${terminalRunningCount} 个 Shell` : "⌘J 终端"}
       </button>
     </footer>
   );

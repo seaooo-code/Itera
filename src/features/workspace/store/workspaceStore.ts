@@ -97,6 +97,10 @@ function clampSidebar(width: number) {
   return Math.min(460, Math.max(196, Math.round(width)));
 }
 
+function clampTerminal(height: number) {
+  return Math.min(420, Math.max(132, Math.round(height)));
+}
+
 function fileName(path: string) {
   return path.replace(/\\/g, "/").split("/").pop() ?? path;
 }
@@ -186,6 +190,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
       previewPath: null,
       sidebarVisible: true,
       sidebarWidth: 264,
+      terminalVisible: false,
+      terminalHeight: 224,
       editorViewMode: "edit",
       findState: {
         isOpen: false,
@@ -539,6 +545,15 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       resizeSidebar: (width) => set({ sidebarWidth: clampSidebar(width) }),
 
+      toggleTerminal: () => {
+        if (!get().project) return;
+        set((state) => ({ terminalVisible: !state.terminalVisible }));
+      },
+
+      setTerminalVisible: (terminalVisible) => set({ terminalVisible }),
+
+      resizeTerminal: (height) => set({ terminalHeight: clampTerminal(height) }),
+
       setEditorViewMode: (editorViewMode) =>
         set((state) => ({
           editorViewMode,
@@ -636,6 +651,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         activePath: state.activePath,
         sidebarVisible: state.sidebarVisible,
         sidebarWidth: state.sidebarWidth,
+        terminalVisible: state.terminalVisible,
+        terminalHeight: state.terminalHeight,
         editorViewMode: state.editorViewMode,
         findState: {
           isOpen: false,

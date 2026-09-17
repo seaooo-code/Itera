@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import type { CodeEditorHandle } from "../../editor/components/CodeEditor";
 import { summarizeLineChanges } from "../../editor/codemirror/extensions";
+import { TerminalPanel } from "../../terminal/components/TerminalPanel";
 import { formatFileError } from "../../../services/tauri/filesystem";
 import { formatClock } from "../../../shared/utils/time";
 import { getTreePathState, selectActiveTab } from "../store/selectors";
@@ -28,6 +29,8 @@ export function WorkspaceShell() {
   const sidebarVisible = useWorkspaceStore((state) => state.sidebarVisible);
   const sidebarWidth = useWorkspaceStore((state) => state.sidebarWidth);
   const editorViewMode = useWorkspaceStore((state) => state.editorViewMode);
+  const terminalVisible = useWorkspaceStore((state) => state.terminalVisible);
+  const terminalHeight = useWorkspaceStore((state) => state.terminalHeight);
   const findState = useWorkspaceStore((state) => state.findState);
   const recentProjects = useWorkspaceStore((state) => state.recentProjects);
   const syncState = useWorkspaceStore((state) => state.syncState);
@@ -50,6 +53,9 @@ export function WorkspaceShell() {
   const toggleSidebar = useWorkspaceStore((state) => state.toggleSidebar);
   const resizeSidebar = useWorkspaceStore((state) => state.resizeSidebar);
   const setEditorViewMode = useWorkspaceStore((state) => state.setEditorViewMode);
+  const toggleTerminal = useWorkspaceStore((state) => state.toggleTerminal);
+  const setTerminalVisible = useWorkspaceStore((state) => state.setTerminalVisible);
+  const resizeTerminal = useWorkspaceStore((state) => state.resizeTerminal);
   const openFind = useWorkspaceStore((state) => state.openFind);
   const closeFind = useWorkspaceStore((state) => state.closeFind);
   const setFindQuery = useWorkspaceStore((state) => state.setFindQuery);
@@ -63,6 +69,7 @@ export function WorkspaceShell() {
   const [toast, setToast] = useState<ToastState | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
   const [confirmBusy, setConfirmBusy] = useState(false);
+  const [terminalRunningCount, setTerminalRunningCount] = useState(0);
   const treePaths = useMemo(() => getTreePathState(tabs), [tabs]);
   const lineChanges = useMemo(
     () =>
@@ -269,6 +276,9 @@ export function WorkspaceShell() {
       } else if (modifier && event.key.toLowerCase() === "f") {
         event.preventDefault();
         handleOpenFind();
+      } else if (modifier && event.key.toLowerCase() === "j" && project) {
+        event.preventDefault();
+        toggleTerminal();
       } else if (
         modifier &&
         project &&
@@ -307,6 +317,7 @@ export function WorkspaceShell() {
     project,
     setEditorViewMode,
     toggleSidebar,
+    toggleTerminal,
   ]);
 
   const handleResizeStart = useCallback(
@@ -324,6 +335,23 @@ export function WorkspaceShell() {
       window.addEventListener("pointerup", stop, { once: true });
     },
     [resizeSidebar, sidebarWidth],
+  );
+
+  const handleTerminalResizeStart = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      const startY = event.clientY;
+      const startHeight = terminalHeight;
+      const update = (moveEvent: globalThis.PointerEvent) =>
+        resizeTerminal(startHeight + startY - moveEvent.clientY);
+      const stop = () => {
+        window.removeEventListener("pointermove", update);
+        window.removeEventListener("pointerup", stop);
+      };
+      window.addEventListener("pointermove", update);
+      window.addEventListener("pointerup", stop, { once: true });
+    },
+    [resizeTerminal, terminalHeight],
   );
 
   const needsExternalAttention = tabs.some((tab) => tab.externalConflict || tab.missing);
@@ -389,29 +417,64 @@ export function WorkspaceShell() {
                 onResize={resizeSidebar}
               />
             ) : null}
-            <EditorWorkspace
-              tabs={tabs}
-              activePath={activePath}
-              previewPath={previewPath}
-              previewRevision={project.syncedAt}
-              treeChanges={treeChanges}
-              activeTab={activeTab}
-              editorViewMode={editorViewMode}
-              findState={findState}
-              editorRef={editorRef}
-              onSetActiveTab={setActiveTab}
-              onCloseTab={handleCloseTab}
-              onPromoteTab={(path) => handleOpenFile(path, { preview: false })}
-              onOpenFind={handleOpenFind}
-              onCloseFind={closeFind}
-              onSetFindQuery={setFindQuery}
-              onSetFindCaseSensitive={setFindCaseSensitive}
-              onFindMove={handleFindMove}
-              onDismissDiskNotice={dismissDiskNotice}
-              onUpdateContent={updateTabContent}
-              onUpdateCursor={updateTabCursor}
-              onUpdateScroll={updateTabScroll}
-            />
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <EditorWorkspace
+                tabs={tabs}
+                activePath={activePath}
+                previewPath={previewPath}
+                previewRevision={project.syncedAt}
+                treeChanges={treeChanges}
+                activeTab={activeTab}
+                editorViewMode={editorViewMode}
+                findState={findState}
+                editorRef={editorRef}
+                terminalVisible={terminalVisible}
+                onSetActiveTab={setActiveTab}
+                onCloseTab={handleCloseTab}
+                onPromoteTab={(path) => handleOpenFile(path, { preview: false })}
+                onOpenFind={handleOpenFind}
+                onCloseFind={closeFind}
+                onSetFindQuery={setFindQuery}
+                onSetFindCaseSensitive={setFindCaseSensitive}
+                onFindMove={handleFindMove}
+                onDismissDiskNotice={dismissDiskNotice}
+                onUpdateContent={updateTabContent}
+                onUpdateCursor={updateTabCursor}
+                onUpdateScroll={updateTabScroll}
+              />
+              {terminalVisible ? (
+                <hr
+                  aria-orientation="horizontal"
+                  aria-label="调整终端面板高度"
+                  aria-valuemin={132}
+                  aria-valuemax={420}
+                  aria-valuenow={terminalHeight}
+                  tabIndex={0}
+                  className="group relative mr-2 h-2 shrink-0 cursor-row-resize outline-none after:absolute after:inset-x-3 after:top-1/2 after:h-0.5 after:-translate-y-1/2 after:rounded-full after:bg-transparent hover:after:bg-[var(--itera-color-primary-border)] focus-visible:after:bg-[var(--itera-color-primary)]"
+                  onPointerDown={handleTerminalResizeStart}
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowUp") {
+                      event.preventDefault();
+                      resizeTerminal(terminalHeight + 16);
+                    } else if (event.key === "ArrowDown") {
+                      event.preventDefault();
+                      resizeTerminal(terminalHeight - 16);
+                    }
+                  }}
+                />
+              ) : null}
+              <div className={terminalVisible ? "mr-2 mb-2" : "hidden"}>
+                <TerminalPanel
+                  key={project.path}
+                  projectPath={project.path}
+                  projectName={project.name}
+                  visible={terminalVisible}
+                  height={terminalHeight}
+                  onHide={() => setTerminalVisible(false)}
+                  onRunningCountChange={setTerminalRunningCount}
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -422,7 +485,10 @@ export function WorkspaceShell() {
           lineSelection={lineSelection}
           lineChanges={lineChanges}
           findAvailable={findAvailable}
+          terminalVisible={terminalVisible}
+          terminalRunningCount={terminalRunningCount}
           onOpenFind={handleOpenFind}
+          onToggleTerminal={toggleTerminal}
         />
 
         {externalChangeSummary && project ? (

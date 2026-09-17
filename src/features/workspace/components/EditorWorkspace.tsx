@@ -89,6 +89,7 @@ interface EditorWorkspaceProps {
   editorViewMode: EditorViewMode;
   findState: FindState;
   editorRef: RefObject<CodeEditorHandle | null>;
+  terminalVisible: boolean;
   onSetActiveTab: (path: string) => void;
   onCloseTab: (path: string) => void;
   onPromoteTab: (path: string) => void;
@@ -113,6 +114,7 @@ export function EditorWorkspace({
   editorViewMode,
   findState,
   editorRef,
+  terminalVisible,
   onSetActiveTab,
   onCloseTab,
   onPromoteTab,
@@ -163,7 +165,7 @@ export function EditorWorkspace({
 
   return (
     <section
-      className={`my-2 mr-2 flex min-h-0 min-w-0 flex-1 overflow-hidden ${showEditor && showPreview ? "gap-2" : "rounded-[9px] bg-[var(--itera-color-surface)] shadow-[var(--itera-shadow-panel)]"}`}
+      className={`mr-2 mt-2 flex min-h-0 min-w-0 flex-1 overflow-hidden ${terminalVisible ? "mb-0" : "mb-2"} ${showEditor && showPreview ? "gap-2" : "rounded-[9px] bg-[var(--itera-color-surface)] shadow-[var(--itera-shadow-panel)]"}`}
       aria-label="编辑器工作区"
     >
       <Tabs

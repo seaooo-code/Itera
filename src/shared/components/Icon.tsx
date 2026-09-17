@@ -10,6 +10,7 @@ import { CodeIcon } from "@phosphor-icons/react/Code";
 import { FloppyDiskIcon } from "@phosphor-icons/react/FloppyDisk";
 import { FolderSimpleIcon } from "@phosphor-icons/react/FolderSimple";
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/MagnifyingGlass";
+import { PlusIcon } from "@phosphor-icons/react/Plus";
 import { SidebarSimpleIcon } from "@phosphor-icons/react/SidebarSimple";
 import { WarningIcon } from "@phosphor-icons/react/Warning";
 import { XIcon } from "@phosphor-icons/react/X";
@@ -27,6 +28,7 @@ export type IconName =
   | "code"
   | "folder"
   | "panel"
+  | "plus"
   | "refresh"
   | "search"
   | "save"
@@ -44,6 +46,7 @@ const ICONS: Record<IconName, PhosphorIcon> = {
   code: CodeIcon,
   folder: FolderSimpleIcon,
   panel: SidebarSimpleIcon,
+  plus: PlusIcon,
   refresh: ArrowsClockwiseIcon,
   search: MagnifyingGlassIcon,
   save: FloppyDiskIcon,

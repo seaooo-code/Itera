@@ -74,6 +74,8 @@ export interface WorkspaceState {
   previewPath: string | null;
   sidebarVisible: boolean;
   sidebarWidth: number;
+  terminalVisible: boolean;
+  terminalHeight: number;
   editorViewMode: EditorViewMode;
   findState: FindState;
   recentProjects: RecentProject[];
@@ -99,6 +101,9 @@ export interface WorkspaceActions {
   dismissExternalChangeSummary: () => void;
   toggleSidebar: () => void;
   resizeSidebar: (width: number) => void;
+  toggleTerminal: () => void;
+  setTerminalVisible: (visible: boolean) => void;
+  resizeTerminal: (height: number) => void;
   setEditorViewMode: (mode: EditorViewMode) => void;
   openFind: () => void;
   closeFind: () => void;

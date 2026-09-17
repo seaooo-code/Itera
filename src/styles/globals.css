@@ -2,6 +2,14 @@
 @import "./tokens.css";
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Itera JetBrainsMono Nerd Font Mono";
+  src: url("../assets/fonts/JetBrainsMonoNLNerdFontMono-Regular.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+}
+
 @theme {
   --font-sans: var(--itera-font-sans);
   --font-mono: var(--itera-font-mono);

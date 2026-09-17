@@ -44,19 +44,21 @@
   --itera-color-change-added-ink: oklch(45% 0.13 142);
   --itera-color-change-modified: oklch(46% 0.16 262);
   --itera-color-change-deleted: oklch(52% 0.19 25);
-  --itera-color-syntax-keyword: oklch(34% 0.15 300);
-  --itera-color-syntax-tag: oklch(36.5% 0.13 335);
-  --itera-color-syntax-function: oklch(39% 0.125 262);
-  --itera-color-syntax-number: oklch(41% 0.15 20);
-  --itera-color-syntax-type: oklch(43% 0.065 205);
-  --itera-color-syntax-string: oklch(45% 0.115 45);
-  --itera-color-syntax-property: oklch(46.5% 0.038 200);
-  --itera-color-syntax-comment: oklch(47% 0.014 200);
-  --itera-color-syntax-punctuation: oklch(47.5% 0.008 200);
+  --itera-color-syntax-text: oklch(32% 0.014 232);
+  --itera-color-syntax-keyword: oklch(45.5% 0.185 300);
+  --itera-color-syntax-number: oklch(45.5% 0.16 18);
+  --itera-color-syntax-property: oklch(45.8% 0.088 105);
+  --itera-color-syntax-type: oklch(46.5% 0.095 232);
+  --itera-color-syntax-punctuation: oklch(46.8% 0.012 248);
+  --itera-color-syntax-comment: oklch(48% 0.026 58);
+  --itera-color-syntax-tag: oklch(48.5% 0.165 338);
+  --itera-color-syntax-function: oklch(49.2% 0.18 268);
+  --itera-color-syntax-string: oklch(49.2% 0.118 50);
   --itera-color-icon-typescript: oklch(44% 0.112 255);
   --itera-color-icon-javascript: oklch(46% 0.092 80);
   --itera-color-icon-markdown: oklch(45% 0.13 300);
   --itera-color-line-number: oklch(54.5% 0.013 210);
+  --itera-color-terminal-output: oklch(30% 0.012 210);
   --itera-shadow-panel:
     0 1px 2px -1px color-mix(in oklch, var(--itera-color-ink) 11%, transparent),
     0 10px 24px -16px color-mix(in oklch, var(--itera-color-ink) 20%, transparent);
@@ -78,6 +80,9 @@
   --itera-font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
   --itera-font-mono:
     "JetBrains Mono Variable", "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --itera-font-terminal:
+    "Itera JetBrainsMono Nerd Font Mono", "JetBrains Mono Variable", "JetBrains Mono", ui-monospace,
+    Menlo, monospace;
   --itera-font-size-root: 13px;
   --itera-titlebar-height: 46px;
   --itera-statusbar-height: 28px;
